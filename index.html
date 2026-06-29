@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#f2f3f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Vanderlande Module Hub</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="mark">M</div>
+    <div class="titles">
+      <div class="title" id="brand-title">Module Hub</div>
+      <div class="sub" id="brand-sub">Site operations</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="ghost" onclick="location.hash='#/'">All modules</button>
+  </header>
+
+  <main class="wrap" id="view"></main>
+
+  <div class="foot">MVP · public content demo · health data simulated</div>
+</div>
+
+<!-- Floating scan button -->
+<button class="fab" onclick="openScanner()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+    <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+  </svg>
+  Scan QR
+</button>
+
+<!-- Scanner overlay -->
+<div class="scanner" id="scanner">
+  <video id="scan-video" playsinline muted></video>
+  <div class="bar">
+    <span class="t">Scan module label</span>
+    <button class="x" onclick="closeScanner()" aria-label="Close">×</button>
+  </div>
+  <div class="reticle"><i></i><div class="laser"></div></div>
+  <div class="hint" id="scan-hint">Centre the QR code in the frame</div>
+  <div class="err" id="scan-err">
+    <div class="big">Camera unavailable</div>
+    <p>—</p>
+    <button onclick="openScanner()">Try again</button>
+  </div>
+</div>
+
+<!-- QR label modal -->
+<div class="modal-bg" id="qr-modal" onclick="if(event.target===this)closeQR()">
+  <div class="modal">
+    <h3 id="qr-name">Module</h3>
+    <div class="mid" id="qr-id">—</div>
+    <div id="qrbox"></div>
+    <div class="url" id="qr-url"></div>
+    <button class="btn" onclick="printQR()">Print label</button>
+    <button class="btn sec" onclick="closeQR()">Close</button>
+  </div>
+</div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
