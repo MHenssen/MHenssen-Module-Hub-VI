@@ -14,6 +14,23 @@ const SITE = {
   subtitle: "Site operations — manuals, video & live health",
   // Demo site. Rename freely.
   location: "Demo Distribution Centre",
+  // Fallback helpdesk used when a module (or its system) has none of its own.
+  // Replace these demo numbers/email with your real support details.
+  helpdesk: { line: "Site Technical Helpdesk", phone: "+31 88 000 0000",
+              hours: "24/7", email: "helpdesk@example.com" },
+};
+
+/* Helpdesk lines. A module can point at one of these by key (module.helpdesk),
+   otherwise the app falls back to the line matching its system, then SITE.helpdesk.
+   NOTE: demo numbers — swap in the real per-line phone numbers before use. */
+const HELPDESKS = {
+  posisorter: { line: "Sortation Support — POSISORTER", phone: "+31 88 000 0042",
+                hours: "Mon–Sun 06:00–22:00 CET", email: "sortation.support@example.com" },
+  spox:       { line: "SPOX Support Line", phone: "+31 88 000 0071",
+                hours: "Mon–Fri 07:00–19:00 CET", email: "spox.support@example.com" },
+  // Example of a module needing a *different* number (e.g. OEM / specialist).
+  oem:        { line: "Carrier Specialist (OEM)", phone: "+31 88 000 0999",
+                hours: "Mon–Fri 08:00–17:00 CET", email: "oem.carriers@example.com" },
 };
 
 /* Shared, reusable public reference content (rendered in the in-app reader).
@@ -64,6 +81,7 @@ const MODULES = {
     name: "POSISORTER Slat & Shoe Carrier Bed",
     location: "Hall 2 · Sortation Line A · Carrier 031",
     status: "attention",
+    helpdesk: "oem",   // this module routes to a dedicated specialist line
     summary:
       "Full-width carrier bed where divert shoes slide diagonally across the " +
       "slats to push product gently into the outfeed spurs. Patented " +

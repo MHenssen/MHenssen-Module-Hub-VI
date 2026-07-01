@@ -189,6 +189,37 @@ a { color: inherit; }
 .pill.down { background: var(--bad-weak); color: var(--bad); }
 .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
+/* ---------------------------- Support card ------------------------------ */
+.support {
+  background: var(--surface); border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.support-head { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.support-ic {
+  width: 40px; height: 40px; border-radius: 11px; flex: none;
+  display: grid; place-items: center; background: var(--ok-weak); color: var(--ok);
+}
+.support-ic svg { width: 20px; height: 20px; }
+.support-meta { min-width: 0; }
+.support-meta .sl { font-weight: 700; font-size: 15px; letter-spacing: -0.2px; }
+.support-meta .sh { font-size: 12.5px; color: var(--text-2); margin-top: 1px; }
+.support-actions { display: flex; gap: 10px; }
+.support-actions a {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none; border-radius: 13px; padding: 13px 10px;
+  font-size: 14.5px; font-weight: 700; white-space: nowrap;
+}
+.support-actions a svg { width: 18px; height: 18px; flex: none; }
+.call-btn { background: var(--ok); color: #fff; }
+.call-btn:active { filter: brightness(0.95); }
+.report-btn { background: var(--surface-2); color: var(--text); }
+.report-btn:active { filter: brightness(0.97); }
+.support-note { font-size: 12px; color: var(--text-2); text-align: center; margin-top: 11px; }
+@media (max-width: 380px) {
+  .support-actions { flex-direction: column; }
+  .support-actions a span { font-size: 14px; }
+}
+
 /* --------------------------- Segmented tabs ----------------------------- */
 .segment {
   display: flex; gap: 2px; background: var(--surface-2);

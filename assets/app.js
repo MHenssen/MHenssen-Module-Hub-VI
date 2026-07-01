@@ -13,6 +13,8 @@ const SVG = {
   vid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   module: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>',
 };
 
 const STATUS = {
@@ -130,6 +132,7 @@ function renderModule(id) {
         <span class="pill" onclick="showQR('${encodeURIComponent(id)}')" style="cursor:pointer">QR label</span>
       </div>
     </div>
+    ${supportCard(id, mod)}
     <div class="segment">
       <button class="${activeTab === "manuals" ? "active" : ""}" onclick="setTab('manuals')">Manuals</button>
       <button class="${activeTab === "videos" ? "active" : ""}" onclick="setTab('videos')">Videos</button>
@@ -140,6 +143,42 @@ function renderModule(id) {
 }
 
 function setTab(t) { activeTab = t; renderModule(currentId()); }
+
+/* ---------------------------- Helpdesk ---------------------------------- */
+function helpdeskFor(mod) {
+  if (mod.helpdesk && HELPDESKS[mod.helpdesk]) return HELPDESKS[mod.helpdesk];
+  const bySystem = HELPDESKS[(mod.system || "").toLowerCase()];
+  return bySystem || SITE.helpdesk;
+}
+function telHref(phone) { return "tel:" + String(phone).replace(/[^+\d]/g, ""); }
+function reportHref(id, mod, desk) {
+  const subject = `Issue: ${id} — ${mod.name}`;
+  const body =
+    `Module: ${mod.name} (${id})\n` +
+    `Location: ${mod.location}\n` +
+    `Status: ${(STATUS[mod.status] || [, "Unknown"])[1]}\n\n` +
+    `Describe the issue:\n`;
+  return `mailto:${desk.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function supportCard(id, mod) {
+  const desk = helpdeskFor(mod);
+  return `
+    <div class="support">
+      <div class="support-head">
+        <div class="support-ic">${SVG.phone}</div>
+        <div class="support-meta">
+          <div class="sl">${escapeHtml(desk.line)}</div>
+          <div class="sh">${escapeHtml(desk.hours || "")}</div>
+        </div>
+      </div>
+      <div class="support-actions">
+        <a class="call-btn" href="${telHref(desk.phone)}">${SVG.phone}<span>Call ${escapeHtml(desk.phone)}</span></a>
+        <a class="report-btn" href="${reportHref(id, mod, desk)}">${SVG.mail}<span>Email a report</span></a>
+      </div>
+      <div class="support-note">Mention module <strong>${escapeHtml(id)}</strong> when you call.</div>
+    </div>`;
+}
 
 function renderTab(id) {
   const mod = MODULES[id];
