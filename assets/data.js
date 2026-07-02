@@ -26,7 +26,7 @@ const SITE = {
 const HELPDESKS = {
   posisorter: { line: "Sortation Support — POSISORTER", phone: "+31 88 000 0042",
                 hours: "Mon–Sun 06:00–22:00 CET", email: "sortation.support@example.com" },
-  spox:       { line: "SPOX Support Line", phone: "+31 88 000 0071",
+  spox:       { line: "SPOX Support Line", phone: "+31 413 494 819",
                 hours: "Mon–Fri 07:00–19:00 CET", email: "spox.support@example.com" },
   // Example of a module needing a *different* number (e.g. OEM / specialist).
   oem:        { line: "Carrier Specialist (OEM)", phone: "+31 88 000 0999",
