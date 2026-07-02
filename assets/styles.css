@@ -4,29 +4,35 @@
    ========================================================================== */
 
 :root {
-  /* Surfaces */
-  --bg: #f2f3f7;
+  /* Surfaces — Vanderlande off-white + warm neutrals */
+  --bg: #f1ece1;            /* OFFWHITE */
   --surface: #ffffff;
-  --surface-2: #f7f8fa;
-  --hairline: rgba(60, 60, 67, 0.12);
+  --surface-2: #ece6d8;     /* warm light-grey tint */
+  --hairline: rgba(95, 95, 95, 0.16);   /* DARK GREY @ low alpha */
 
-  /* Text */
-  --text: #1c1c1e;
-  --text-2: #6b7280;
-  --text-3: #9aa0aa;
+  /* Text — grey family */
+  --text: #404040;          /* slightly darkened DARK GREY for headings/body */
+  --text-2: #5f5f5f;        /* DARK GREY */
+  --text-3: #aaaaaa;        /* GREY */
 
-  /* Accent (iOS/Material blue-indigo) */
-  --accent: #2f6df6;
-  --accent-weak: #eaf1ff;
-  --accent-press: #235ad6;
+  /* Accent — Vanderlande ORANGE */
+  --accent: #ef7b10;        /* ORANGE */
+  --accent-weak: #fdecd9;   /* light orange tint */
+  --accent-press: #cd5b1c;  /* DARK ORANGE */
 
-  /* Status */
-  --ok: #1fa463;
-  --ok-weak: #e6f6ee;
-  --warn: #e08a00;
-  --warn-weak: #fdf2dc;
-  --bad: #e0483a;
-  --bad-weak: #fdeceb;
+  /* Brand family — blues & purple (marks, badges, accents) */
+  --brand-dark-blue: #2a4a96;   /* DARK BLUE */
+  --brand-blue: #6786b0;        /* BLUE */
+  --brand-light-blue: #6baccc;  /* LIGHT BLUE */
+  --brand-purple: #532864;      /* PURPLE */
+
+  /* Status — Signal colours */
+  --ok: #5aaa19;            /* GREEN */
+  --ok-weak: #eaf5db;
+  --warn: #9a7b00;          /* readable shade of Signal YELLOW #FFCC00 */
+  --warn-weak: #fff4cc;
+  --bad: #c80000;           /* RED */
+  --bad-weak: #fbe3e3;
 
   --radius: 18px;
   --radius-sm: 13px;
@@ -39,19 +45,24 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --hairline: rgba(255, 255, 255, 0.12);
-    --text: #f5f5f7;
-    --text-2: #a1a1aa;
-    --text-3: #8a8a8e;
-    --accent: #4f8bff;
-    --accent-weak: #18233b;
-    --accent-press: #6ba0ff;
-    --ok-weak: #102a1d;
-    --warn-weak: #2e2410;
-    --bad-weak: #2e1513;
+    --bg: #1e1d1b;
+    --surface: #2a2825;
+    --surface-2: #37342f;
+    --hairline: rgba(241, 236, 225, 0.14);
+    --text: #f1ece1;          /* OFFWHITE */
+    --text-2: #c4beb1;
+    --text-3: #8f8a80;
+    --accent: #ff8c2a;        /* brighter ORANGE for dark surfaces */
+    --accent-weak: #3a2a16;
+    --accent-press: #ef7b10;
+    --brand-blue: #7f9cc4;
+    --brand-purple: #a06fbb;
+    --ok: #6fbf2c;
+    --ok-weak: #1c2b10;
+    --warn: #d9b300;
+    --warn-weak: #2f2809;
+    --bad: #ff5a5a;
+    --bad-weak: #2e1414;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 }
@@ -84,9 +95,9 @@ a { color: inherit; }
 }
 .topbar .mark {
   width: 34px; height: 34px; border-radius: 9px; flex: none;
-  background: linear-gradient(150deg, #3a78ff, #2f6df6);
+  background: linear-gradient(150deg, #f6902f, #ef7b10);
   display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px;
-  box-shadow: 0 3px 8px rgba(47, 109, 246, 0.35);
+  box-shadow: 0 3px 8px rgba(239, 123, 16, 0.38);
 }
 .topbar .titles { min-width: 0; }
 .topbar .title { font-weight: 700; font-size: 16px; letter-spacing: -0.2px; }
@@ -138,9 +149,9 @@ a { color: inherit; }
 .row .badge {
   width: 44px; height: 44px; border-radius: 11px; flex: none;
   display: grid; place-items: center; font-weight: 800; font-size: 12px;
-  background: var(--accent-weak); color: var(--accent);
+  background: #e7edf5; color: var(--brand-dark-blue);
 }
-.row .badge.spox { background: #eef0ff; color: #5b5bd6; }
+.row .badge.spox { background: #efe6f2; color: var(--brand-purple); }
 .row .badge svg { width: 22px; height: 22px; }
 .row .info { flex: 1; min-width: 0; }
 .row .info .n { font-weight: 650; font-size: 15px; letter-spacing: -0.2px;
@@ -334,7 +345,7 @@ a { color: inherit; }
   display: inline-flex; align-items: center; gap: 9px;
   background: var(--accent); color: #fff; border: none;
   padding: 15px 24px; border-radius: 30px; font-size: 15.5px; font-weight: 700;
-  box-shadow: 0 8px 24px rgba(47, 109, 246, 0.45);
+  box-shadow: 0 8px 24px rgba(239, 123, 16, 0.45);
 }
 .fab:active { background: var(--accent-press); transform: translateX(-50%) scale(0.97); }
 .fab svg { width: 21px; height: 21px; }
@@ -363,7 +374,7 @@ a { color: inherit; }
 .scanner .reticle i::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 .scanner .laser {
   position: absolute; left: 8%; right: 8%; height: 3px; border-radius: 3px;
-  background: linear-gradient(90deg, transparent, #4f8bff, transparent);
+  background: linear-gradient(90deg, transparent, #ef7b10, transparent);
   animation: scan 2.4s ease-in-out infinite;
 }
 @keyframes scan { 0%,100% { top: 10%; } 50% { top: 90%; } }

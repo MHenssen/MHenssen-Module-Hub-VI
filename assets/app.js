@@ -355,7 +355,7 @@ function printQR() {
   w.document.write(`<html><head><title>${id} — label</title>
     <style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;padding:48px}
     img{width:320px;height:320px}h2{margin:18px 0 2px;font-size:22px}
-    .c{font-family:ui-monospace,monospace;color:#2f6df6;font-size:18px}
+    .c{font-family:ui-monospace,monospace;color:#ef7b10;font-size:18px}
     .s{color:#6b7280;margin-top:6px;font-size:13px}</style></head>
     <body><img src="${data}"><h2>${escapeHtml(name)}</h2><div class="c">${escapeHtml(id)}</div>
     <div class="s">Scan with the Module Hub app</div></body></html>`);
@@ -497,9 +497,9 @@ function drawSpark(canvas, data, max) {
   ctx.beginPath();
   ctx.moveTo(x(0), y(data[0]));
   for (let i = 1; i < data.length; i++) ctx.lineTo(x(i), y(data[i]));
-  ctx.strokeStyle = "#2f6df6"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
+  ctx.strokeStyle = "#ef7b10"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
   ctx.lineTo(x(data.length - 1), h); ctx.lineTo(x(0), h); ctx.closePath();
-  ctx.fillStyle = "rgba(47,109,246,0.12)"; ctx.fill();
+  ctx.fillStyle = "rgba(239,123,16,0.13)"; ctx.fill();
 }
 
 /* ------------------------------- Boot ----------------------------------- */
