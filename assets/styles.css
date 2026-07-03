@@ -83,6 +83,38 @@ a { color: inherit; }
 
 .app { max-width: 760px; margin: 0 auto; min-height: 100%; padding-bottom: 96px; }
 
+/* ------------------------- Password gate -------------------------------- */
+html.locked .app,
+html.locked .fab { display: none !important; }
+#gate {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+  padding: 24px; background: var(--bg);
+}
+.gate-card {
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 30px 26px; width: 100%; max-width: 360px; text-align: center;
+}
+.gate-mark {
+  width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 16px;
+  background: linear-gradient(150deg, #f6902f, #ef7b10);
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 24px;
+  box-shadow: 0 4px 12px rgba(239, 123, 16, 0.38);
+}
+.gate-card h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; }
+.gate-card p { color: var(--text-2); font-size: 14px; margin: 5px 0 20px; }
+.gate-card input {
+  width: 100%; border: 1px solid var(--hairline); background: var(--surface-2);
+  border-radius: 13px; padding: 14px 15px; font-size: 16px; color: var(--text);
+  outline: none; text-align: center;
+}
+.gate-card input:focus { border-color: var(--accent); background: var(--surface); }
+.gate-err { color: var(--bad); font-size: 13px; min-height: 18px; margin: 9px 0 3px; }
+.gate-btn {
+  width: 100%; background: var(--accent); color: #fff; border: none;
+  padding: 14px; border-radius: 13px; font-weight: 700; font-size: 15.5px; margin-top: 6px;
+}
+.gate-btn:active { background: var(--accent-press); }
+
 /* ----------------------------- Top bar ---------------------------------- */
 .topbar {
   position: sticky; top: 0; z-index: 20;
