@@ -22,6 +22,8 @@ const STATUS = {
   attention: ["attention", "Needs attention"],
   down: ["down", "Stopped"],
 };
+// Short labels for the compact home tiles
+const STATUS_SHORT = { operational: "Running", attention: "Attention", down: "Stopped" };
 
 let activeTab = "manuals";
 let healthTimer = null;
@@ -47,14 +49,16 @@ function currentId() {
 }
 
 /* ------------------------------- Home ----------------------------------- */
+function greeting() {
+  const h = new Date().getHours();
+  return h < 6 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+
 function renderHome() {
   const v = document.getElementById("view");
-  const groups = {};
-  for (const [id, mod] of Object.entries(MODULES)) {
-    (groups[mod.system] = groups[mod.system] || []).push([id, mod]);
-  }
   let html = `
     <div class="hero">
+      <div class="hello">${greeting()} 👋</div>
       <h1>Scan a module</h1>
       <p>Point the scanner at the QR label on any module to open its manuals, videos and live health. Or browse below.</p>
     </div>
@@ -65,6 +69,7 @@ function renderHome() {
     <div id="dir"></div>`;
   v.innerHTML = html;
   drawDir("");
+  stagger(v, 70);
 }
 
 function drawDir(query) {
@@ -81,26 +86,27 @@ function drawDir(query) {
 
   let html = "";
   for (const sys of systems) {
-    html += `<div class="group-label">${sys}</div><div class="list">`;
+    html += `<div class="group-label">${sys}</div><div class="tiles">`;
     for (const [id, mod] of groups[sys]) {
       const [sCls] = STATUS[mod.status] || ["ok"];
-      const badgeCls = sys === "SPOX" ? "badge spox" : "badge";
+      const sShort = STATUS_SHORT[mod.status] || "OK";
+      const tileCls = sys === "SPOX" ? "tile spox" : "tile";
       html += `
-        <a class="row" href="#/module/${encodeURIComponent(id)}">
-          <div class="${badgeCls}">${SVG.module}</div>
-          <div class="info">
-            <div class="n">${escapeHtml(mod.name)}</div>
-            <div class="c">${escapeHtml(id)} · ${escapeHtml(mod.location)}</div>
+        <a class="${tileCls}" href="#/module/${encodeURIComponent(id)}">
+          <div class="t-top">
+            <div class="badge">${SVG.module}</div>
+            <span class="chip ${sCls}"><span class="dot"></span>${sShort}</span>
           </div>
-          <div class="right">
-            <span class="status-dot ${sCls}" title="${STATUS[mod.status][1]}"></span>
-            <span class="chev">›</span>
+          <div>
+            <div class="t-name">${escapeHtml(mod.name)}</div>
+            <div class="t-id">${escapeHtml(id)}</div>
           </div>
         </a>`;
     }
     html += `</div>`;
   }
   dir.innerHTML = html;
+  dir.querySelectorAll(".tiles").forEach((g) => stagger(g, 55));
 }
 function filterHome(val) { drawDir(val); }
 
@@ -133,16 +139,32 @@ function renderModule(id) {
       </div>
     </div>
     ${supportCard(id, mod)}
-    <div class="segment">
+    <div class="segment" style="--idx:${TABS.indexOf(activeTab)}">
+      <div class="seg-thumb"></div>
       <button class="${activeTab === "manuals" ? "active" : ""}" onclick="setTab('manuals')">Manuals</button>
       <button class="${activeTab === "videos" ? "active" : ""}" onclick="setTab('videos')">Videos</button>
       <button class="${activeTab === "health" ? "active" : ""}" onclick="setTab('health')">Health</button>
     </div>
     <div id="tabbody"></div>`;
+  stagger(v, 65);
   renderTab(id);
 }
 
-function setTab(t) { activeTab = t; renderModule(currentId()); }
+const TABS = ["manuals", "videos", "health"];
+
+function setTab(t) {
+  if (t === activeTab) return;
+  activeTab = t;
+  const seg = document.querySelector(".segment");
+  if (seg) {
+    seg.style.setProperty("--idx", TABS.indexOf(t));
+    seg.querySelectorAll("button").forEach((b, i) =>
+      b.classList.toggle("active", TABS[i] === t));
+  }
+  renderTab(currentId());
+  const body = document.getElementById("tabbody");
+  if (body) { body.classList.remove("tab-fade"); void body.offsetWidth; body.classList.add("tab-fade"); }
+}
 
 /* ---------------------------- Helpdesk ---------------------------------- */
 function helpdeskFor(mod) {
@@ -196,6 +218,7 @@ function renderTab(id) {
         <div class="meta"><div class="h">${escapeHtml(r.title)}</div><div class="s">${escapeHtml(r.sub)}</div></div>
         <div class="chev">›</div></a>`;
     }).join("") || `<div class="empty">No manuals linked yet.</div>`;
+    stagger(b, 55);
 
   } else if (activeTab === "videos") {
     b.innerHTML = mod.videos.map((vd) => `
@@ -203,9 +226,20 @@ function renderTab(id) {
         <div class="frame"><iframe src="https://www.youtube-nocookie.com/embed/${vd.id}" title="${escapeHtml(vd.title)}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
         <div class="cap"><div class="h">${escapeHtml(vd.title)}</div><div class="s">${escapeHtml(vd.sub || "Training video")}</div></div>
       </div>`).join("") || `<div class="empty">No videos linked yet.</div>`;
+    stagger(b, 70);
 
   } else {
-    renderHealth(id);
+    // Skeleton shimmer while the (simulated) live feed "connects"
+    b.style.setProperty("--d", "0ms"); // don't inherit the page-level stagger delay
+    b.innerHTML = `
+      <div class="metrics">
+        ${`<div class="sk-card"><div class="sk-line small"></div><div class="sk-line big"></div><div class="sk-line"></div></div>`.repeat(4)}
+      </div>
+      <div class="sk-card"><div class="sk-line small"></div><div class="sk-line"></div><div class="sk-line"></div></div>`;
+    const forId = id;
+    setTimeout(() => {
+      if (activeTab === "health" && currentId() === forId) renderHealth(forId);
+    }, 520);
   }
 }
 
@@ -259,6 +293,10 @@ function renderHealth(id) {
         </div>`).join("") : `<div class="clear">No active faults — running normally.</div>`}
     </div>`;
 
+  stagger(b, 60);
+  const mGrid = b.querySelector(".metrics");
+  if (mGrid) stagger(mGrid, 55);
+
   // live simulation
   const spark = document.getElementById("spark");
   const hist = [];
@@ -266,6 +304,7 @@ function renderHealth(id) {
     tp: h.throughput, temp: h.temp, vib: h.vibration,
     up: h.baseUptime, pr: h.pressure,
   };
+  let first = true;
   function step() {
     state.tp = clamp(state.tp + rand(-180, 180), h.tpMax * 0.78, h.tpMax);
     state.temp = clamp(state.temp + rand(-0.8, 0.8), h.temp - 4, h.tempMax - 2);
@@ -273,14 +312,25 @@ function renderHealth(id) {
     state.up = clamp(state.up + rand(-0.05, 0.04), 92, 100);
     if (h.pneumatic) state.pr = clamp(state.pr + rand(-0.08, 0.08), 5.5, 7);
 
-    setText("m-tp", Math.round(state.tp).toLocaleString());
-    setText("m-up", state.up.toFixed(1));
-    setText("m-temp", state.temp.toFixed(0));
-    setText("m-vib", state.vib.toFixed(1));
+    if (first) {
+      // playful count-up on first paint
+      countUp("m-tp", state.tp, (v) => Math.round(v).toLocaleString());
+      countUp("m-up", state.up, (v) => v.toFixed(1));
+      countUp("m-temp", state.temp, (v) => v.toFixed(0));
+      countUp("m-vib", state.vib, (v) => v.toFixed(1));
+      if (h.pneumatic) countUp("m-pr", state.pr, (v) => v.toFixed(1));
+      first = false;
+    } else {
+      setText("m-tp", Math.round(state.tp).toLocaleString());
+      setText("m-up", state.up.toFixed(1));
+      setText("m-temp", state.temp.toFixed(0));
+      setText("m-vib", state.vib.toFixed(1));
+      if (h.pneumatic) setText("m-pr", state.pr.toFixed(1));
+    }
     setBar("m-up-bar", state.up, 100, "var(--ok)");
     setBar("m-temp-bar", state.temp, h.tempMax, tempColor(state.temp, h.tempMax));
     setBar("m-vib-bar", state.vib, 8, state.vib > 5 ? "var(--warn)" : "var(--accent)");
-    if (h.pneumatic) { setText("m-pr", state.pr.toFixed(1)); setBar("m-pr-bar", state.pr - 5, 2, "var(--accent)"); }
+    if (h.pneumatic) setBar("m-pr-bar", state.pr - 5, 2, "var(--accent)");
 
     hist.push(state.tp); if (hist.length > 48) hist.shift();
     drawSpark(spark, hist, h.tpMax);
@@ -322,6 +372,7 @@ function renderReader(id, key) {
       <h2>${escapeHtml(g.title)}</h2>
       <div class="card">${body}</div>
     </div>`;
+  stagger(v, 70);
 }
 
 /* -------------------------- QR label (generate) ------------------------- */
@@ -473,6 +524,47 @@ function escapeHtml(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+/* Staggered entrance: sets per-child delays, then triggers the rise animation */
+function stagger(container, stepMs = 60) {
+  if (!container) return;
+  Array.from(container.children).forEach((el, i) => {
+    el.style.setProperty("--d", (i * stepMs) + "ms");
+  });
+  container.classList.remove("anim-in");
+  void container.offsetWidth;
+  container.classList.add("anim-in");
+}
+
+/* Animated number count-up (used on first health paint) */
+function countUp(id, target, fmt, ms = 750) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min(1, (now - t0) / ms);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(target * eased);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* Material-style touch ripple on tappable things */
+document.addEventListener("pointerdown", (e) => {
+  const t = e.target.closest(
+    ".tile, .res, .segment button, .ghost, .fab, .call-btn, .report-btn, .modal .btn, .gate-btn");
+  if (!t) return;
+  const r = t.getBoundingClientRect();
+  const d = Math.max(r.width, r.height) * 2;
+  const s = document.createElement("span");
+  s.className = "ripple";
+  s.style.width = s.style.height = d + "px";
+  s.style.left = (e.clientX - r.left - d / 2) + "px";
+  s.style.top = (e.clientY - r.top - d / 2) + "px";
+  t.appendChild(s);
+  setTimeout(() => s.remove(), 600);
+});
 function rand(a, b) { return a + Math.random() * (b - a); }
 function setText(id, t) { const e = document.getElementById(id); if (e) e.textContent = t; }
 function setBar(id, val, max, color) {
