@@ -39,6 +39,9 @@ const PUBLIC_NOTE =
   "Public reference only — sourced from Vanderlande public materials. " +
   "The controlled service manual must be linked here when hosted on the internal network.";
 
+/* "enovia" resources are document METADATA only (demo numbers). The real
+   integration reads title / doc no. / revision from the Enovia unlock in the
+   data platform and deep-links into Enovia — no files are copied into the app. */
 const MODULES = {
   /* ----------------------------- POSISORTER ------------------------------ */
   "POSI-DRV-014": {
@@ -63,10 +66,10 @@ const MODULES = {
         sub: "Public reference · how the sorter works", key: "posi_overview" },
       { type: "guide", title: "Shoe replacement (plug-and-play carrier)",
         sub: "Public reference · ~60 s per shoe", key: "posi_shoe" },
-      { type: "pdf", title: "Drive Unit Maintenance Manual",
-        sub: "Controlled document — link on internal network", url: "#" },
-      { type: "pdf", title: "Lubrication & chain tension schedule",
-        sub: "Controlled document — link on internal network", url: "#" },
+      { type: "enovia", title: "Drive Unit Maintenance Manual",
+        doc: "DEMO-DOC-10482", rev: "C" },
+      { type: "enovia", title: "Lubrication & chain tension schedule",
+        doc: "DEMO-DOC-10517", rev: "A" },
     ],
     videos: [
       { title: "Vanderlande POSISORTER", id: "YXuxRv06C_c", sub: "Product overview" },
@@ -98,10 +101,10 @@ const MODULES = {
         sub: "Public reference · ~60 s per shoe", key: "posi_shoe" },
       { type: "guide", title: "Slat & shoe inspection — what to check",
         sub: "Public reference · wear & alignment", key: "posi_slat" },
-      { type: "pdf", title: "Carrier Bed Service Guide",
-        sub: "Controlled document — link on internal network", url: "#" },
-      { type: "pdf", title: "Fault code reference",
-        sub: "Controlled document — link on internal network", url: "#" },
+      { type: "enovia", title: "Carrier Bed Service Guide",
+        doc: "DEMO-DOC-11036", rev: "B" },
+      { type: "enovia", title: "Fault code reference",
+        doc: "DEMO-DOC-11040", rev: "E" },
     ],
     videos: [
       { title: "Shoe Sorter — POSISORTER", id: "HrdZsPUkCjQ", sub: "Operating principle" },
@@ -129,10 +132,10 @@ const MODULES = {
     resources: [
       { type: "guide", title: "POSISORTER — overview & operating principle",
         sub: "Public reference · how the sorter works", key: "posi_overview" },
-      { type: "pdf", title: "Divert Mechanism Service Guide",
-        sub: "Controlled document — link on internal network", url: "#" },
-      { type: "pdf", title: "Pneumatic system check (if fitted)",
-        sub: "Controlled document — link on internal network", url: "#" },
+      { type: "enovia", title: "Divert Mechanism Service Guide",
+        doc: "DEMO-DOC-11214", rev: "B" },
+      { type: "enovia", title: "Pneumatic system check (if fitted)",
+        doc: "DEMO-DOC-11220", rev: "A" },
     ],
     videos: [
       { title: "Vanderlande POSISORTER", id: "YXuxRv06C_c", sub: "Product overview" },
@@ -161,8 +164,8 @@ const MODULES = {
         sub: "Public reference · how the sorter works", key: "posi_overview" },
       { type: "guide", title: "Photocell & scanner — what to check",
         sub: "Public reference · alignment & cleaning", key: "scan_check" },
-      { type: "pdf", title: "Induction & Scanning Service Guide",
-        sub: "Controlled document — link on internal network", url: "#" },
+      { type: "enovia", title: "Induction & Scanning Service Guide",
+        doc: "DEMO-DOC-11302", rev: "D" },
     ],
     videos: [
       { title: "Line sorter — unboxing insights", id: "vDqDHQNLFSI", sub: "How line sorting works" },
@@ -194,8 +197,8 @@ const MODULES = {
         sub: "Public reference · closed-deck, parallel sort", key: "spox_overview" },
       { type: "guide", title: "Dynamic shoe placement explained",
         sub: "Public reference · drift-free, slip-free handling", key: "spox_shoe" },
-      { type: "pdf", title: "SPOX Section Service Manual",
-        sub: "Controlled document — link on internal network", url: "#" },
+      { type: "enovia", title: "SPOX Section Service Manual",
+        doc: "DEMO-DOC-20177", rev: "B" },
     ],
     videos: [
       { title: "Sorting Insight 4: SPOX", id: "Ccd_TpI861g", sub: "High capacity, same footprint" },
@@ -225,8 +228,8 @@ const MODULES = {
         sub: "Public reference · closed-deck, parallel sort", key: "spox_overview" },
       { type: "guide", title: "Dynamic shoe placement explained",
         sub: "Public reference · drift-free, slip-free handling", key: "spox_shoe" },
-      { type: "pdf", title: "Carrier Refurbishment Procedure",
-        sub: "Controlled document — link on internal network", url: "#" },
+      { type: "enovia", title: "Carrier Refurbishment Procedure",
+        doc: "DEMO-DOC-20263", rev: "A" },
     ],
     videos: [
       { title: "Sorting Insight 4: SPOX", id: "Ccd_TpI861g", sub: "High capacity, same footprint" },
