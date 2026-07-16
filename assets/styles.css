@@ -390,6 +390,7 @@ html.locked .fab { display: none !important; }
 }
 .res .ic svg { width: 21px; height: 21px; }
 .ic.pdf { background: var(--bad-weak); color: var(--bad); }
+.ic.enovia { background: #e7edf5; color: var(--brand-dark-blue); }
 .ic.guide { background: var(--ok-weak); color: var(--ok); }
 .ic.vid { background: var(--accent-weak); color: var(--accent); }
 .res .meta { flex: 1; min-width: 0; }
