@@ -1,0 +1,315 @@
+# =====================================================================
+# Vakantiepakket voor Home Assistant — Mark & Sophie
+# ---------------------------------------------------------------------
+# Installatie:
+#   1. Zet in configuration.yaml (eenmalig, als het er nog niet staat):
+#        homeassistant:
+#          packages: !include_dir_named packages
+#   2. Kopieer dit bestand naar /config/packages/vakantie.yaml
+#   3. Maak de map /config/www/snapshots aan (voor camerafoto's)
+#   4. Herstart Home Assistant
+#
+# Alles draait om de schakelaar input_boolean.vakantiemodus.
+# Zet 'm aan met het script "Vakantie – vertrekcheck" (of handmatig).
+# =====================================================================
+
+input_boolean:
+  vakantiemodus:
+    name: Vakantiemodus
+    icon: mdi:palm-tree
+
+script:
+  # -------------------------------------------------------------------
+  # Eén druk op de knop vlak voor vertrek:
+  # controleert de deuren, zet sluipverbruikers uit, schakelt
+  # vakantiemodus in en zet Alarmo op "away".
+  # -------------------------------------------------------------------
+  vakantie_vertrekcheck:
+    alias: Vakantie – vertrekcheck
+    icon: mdi:airplane-takeoff
+    sequence:
+      - variables:
+          open_deuren: >-
+            {{ (['Voordeur'] if is_state('binary_sensor.contact_sensor_deur', 'on') else [])
+             + (['Achterdeur'] if is_state('binary_sensor.achterdeur_sensor', 'on') else []) }}
+      - choose:
+          - conditions: "{{ open_deuren | count > 0 }}"
+            sequence:
+              - service: notify.iphone_van_mark
+                data:
+                  title: "⚠️ Vertrekcheck mislukt"
+                  message: "Nog open: {{ open_deuren | join(', ') }}. Vakantiemodus is NIET ingeschakeld."
+              - stop: "Er staat nog een deur open"
+      # Sluipverbruikers en risico's uit
+      - service: switch.turn_off
+        target:
+          # LET OP: dit entity-id heet 'lampen_voortuin' maar is de
+          # VERWARMING van het tuinhuis — zie README, hernoem dit ooit!
+          entity_id: switch.lampen_voortuin_stopcontact_1
+      - service: climate.turn_off
+        target:
+          entity_id: climate.air_conditioning_air_care
+      - service: light.turn_off
+        target:
+          entity_id: all
+      - service: media_player.turn_off
+        target:
+          entity_id: media_player.50pus6704_12
+      # Vakantiemodus aan en alarm op "away"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.vakantiemodus
+      - service: alarm_control_panel.alarm_arm_away
+        target:
+          entity_id: alarm_control_panel.alarmo
+      - delay: "00:00:05"
+      - service: notify.iphone_van_mark
+        data:
+          title: "✅ Vakantiemodus actief"
+          message: >-
+            Deuren dicht, verwarming tuinhuis en airco uit, lampen uit.
+            Alarmo staat op: {{ states('alarm_control_panel.alarmo') }}.
+            Fijne vakantie! 🌴
+
+automation:
+  # -------------------------------------------------------------------
+  # 1. Aanwezigheidssimulatie — avond
+  # Rond zonsondergang gaan de woonkamerlampen aan met een willekeurige
+  # vertraging, daarna volgen de tafellampen en (soms) de leeshoek.
+  # Elke avond nét even anders.
+  # -------------------------------------------------------------------
+  - id: vakantie_avondsimulatie
+    alias: Vakantie – avondverlichting (simulatie)
+    trigger:
+      - platform: sun
+        event: sunset
+        offset: "-00:30:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.vakantiemodus
+        state: "on"
+    action:
+      - delay: "{{ range(0, 2700) | random }}"   # 0–45 min willekeurig
+      - service: light.turn_on
+        target:
+          entity_id: light.woonkamerlampen
+        data:
+          brightness_pct: 75
+      - delay: "{{ range(300, 1500) | random }}" # 5–25 min later
+      - service: light.turn_on
+        target:
+          entity_id: light.tafellampen
+      # 50% kans dat ook de leeshoek aangaat
+      - choose:
+          - conditions: "{{ range(0, 100) | random < 50 }}"
+            sequence:
+              - delay: "{{ range(300, 1200) | random }}"
+              - service: light.turn_on
+                target:
+                  entity_id: light.leeshoek
+    mode: single
+    max_exceeded: silent
+
+  # -------------------------------------------------------------------
+  # 2. Aanwezigheidssimulatie — bedtijd
+  # Vanaf 22:30 + willekeurige vertraging: slaapkamer aan, beneden uit,
+  # badkamer even aan/uit, en uiteindelijk alles donker.
+  # -------------------------------------------------------------------
+  - id: vakantie_bedtijdsimulatie
+    alias: Vakantie – bedtijd (simulatie)
+    trigger:
+      - platform: time
+        at: "22:30:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.vakantiemodus
+        state: "on"
+    action:
+      - delay: "{{ range(0, 2400) | random }}"   # 0–40 min willekeurig
+      - service: light.turn_on
+        target:
+          entity_id: light.slaapkamer_3
+        data:
+          brightness_pct: 60
+      - delay: "{{ range(120, 300) | random }}"
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.woonkamerlampen
+            - light.tafellampen
+            - light.leeshoek
+      - delay: "{{ range(300, 900) | random }}"
+      - service: light.turn_on
+        target:
+          entity_id: light.badkamer
+      - delay: "{{ range(240, 600) | random }}"
+      - service: light.turn_off
+        target:
+          entity_id: light.badkamer
+      - delay: "{{ range(600, 1800) | random }}"
+      - service: light.turn_off
+        target:
+          entity_id: light.slaapkamer_3
+    mode: single
+    max_exceeded: silent
+
+  # -------------------------------------------------------------------
+  # 3. Alarmo afgegaan → alles aan de bel
+  # Snapshot van de achterdeurcamera, alle lampen vol aan, sirenes aan,
+  # kritieke melding (doorbreekt stil/focus-modus) naar beide telefoons.
+  # -------------------------------------------------------------------
+  - id: vakantie_alarmo_triggered
+    alias: Alarm – Alarmo afgegaan
+    trigger:
+      - platform: state
+        entity_id: alarm_control_panel.alarmo
+        to: "triggered"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.camera_achterdeur
+        data:
+          filename: /config/www/snapshots/alarm_achterdeur.jpg
+      - service: light.turn_on
+        target:
+          entity_id: all
+        data:
+          brightness_pct: 100
+      - service: siren.turn_on
+        target:
+          entity_id:
+            - siren.sensor_sirene
+            - siren.camera_achterdeur
+      - service: notify.iphone_van_mark
+        data: &alarm_melding
+          title: "🚨 ALARM THUIS"
+          message: >-
+            Alarmo is afgegaan!
+            Sensor(en): {{ state_attr('alarm_control_panel.alarmo', 'open_sensors') or 'onbekend' }}
+          data:
+            image: /local/snapshots/alarm_achterdeur.jpg
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1.0
+      - service: notify.sophies_iphone
+        data: *alarm_melding
+
+  # -------------------------------------------------------------------
+  # 4. Rookmelder → kritieke melding (altijd actief, ook thuis)
+  # -------------------------------------------------------------------
+  - id: rookmelder_kritiek_alarm
+    alias: Alarm – rook gedetecteerd
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.rookmelder_rook
+          - binary_sensor.rookmelder
+        to: "on"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: all
+        data:
+          brightness_pct: 100
+      - service: notify.iphone_van_mark
+        data: &rook_melding
+          title: "🔥 ROOKMELDER"
+          message: "Rook gedetecteerd thuis! Controleer direct de camera's."
+          data:
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1.0
+      - service: notify.sophies_iphone
+        data: *rook_melding
+
+  # -------------------------------------------------------------------
+  # 5. Dagelijks "alles OK"-rapport om 19:00
+  # Als dit bericht een dag uitblijft, weet je dat HA of internet
+  # thuis plat ligt (zie README: externe uptime-check).
+  # -------------------------------------------------------------------
+  - id: vakantie_dagrapport
+    alias: Vakantie – dagelijks rapport
+    trigger:
+      - platform: time
+        at: "19:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.vakantiemodus
+        state: "on"
+    action:
+      - service: notify.iphone_van_mark
+        data:
+          title: "🏠 Dagrapport huis"
+          message: >-
+            Alarm: {{ states('alarm_control_panel.alarmo') }} ·
+            Voordeur: {{ 'dicht' if is_state('binary_sensor.contact_sensor_deur', 'off') else 'OPEN ⚠️' }} ·
+            Achterdeur: {{ 'dicht' if is_state('binary_sensor.achterdeur_sensor', 'off') else 'OPEN ⚠️' }} ·
+            Backup: {{ 'OK' if is_state('binary_sensor.backups_stale', 'off') else 'VERLOPEN ⚠️' }} ·
+            Zon: {{ states('sensor.solaredge_opwek_van_vandaag') }} kWh ·
+            Verbruik: {{ states('sensor.p1_meter_stroomverbruik_vandaag') }} kWh
+
+  # -------------------------------------------------------------------
+  # 6. Iemand aan de achterdeur (camera-event) tijdens vakantie
+  # -------------------------------------------------------------------
+  - id: vakantie_camera_achterdeur_event
+    alias: Vakantie – activiteit camera achterdeur
+    trigger:
+      - platform: state
+        entity_id: event.camera_achterdeur_doorbell_message
+        not_to:
+          - unavailable
+          - unknown
+    condition:
+      - condition: state
+        entity_id: input_boolean.vakantiemodus
+        state: "on"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.camera_achterdeur
+        data:
+          filename: /config/www/snapshots/achterdeur_event.jpg
+      - service: notify.iphone_van_mark
+        data:
+          title: "👀 Activiteit achterdeur"
+          message: "De camera bij de achterdeur heeft iets gedetecteerd."
+          data:
+            image: /local/snapshots/achterdeur_event.jpg
+    mode: single
+    max_exceeded: silent
+
+  # -------------------------------------------------------------------
+  # 7. OPTIONEEL: digitale waakhond (standaard UIT)
+  # Blaf-geluid op de Nest-speaker als de aanwezigheidssensor bij de
+  # voordeur 's avonds iemand ziet. Zet hiervoor eerst een hond.mp3 in
+  # /media en schakel deze automatisering daarna handmatig in.
+  # -------------------------------------------------------------------
+  - id: vakantie_waakhond
+    alias: Vakantie – digitale waakhond (optioneel)
+    initial_state: false
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.human_presence_sensor_voordeur
+        to: "on"
+        for: "00:00:10"
+    condition:
+      - condition: state
+        entity_id: input_boolean.vakantiemodus
+        state: "on"
+      - condition: sun
+        after: sunset
+        before: sunrise
+    action:
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.nest_audio
+        data:
+          media_content_id: media-source://media_source/local/hond.mp3
+          media_content_type: audio/mpeg
+      - delay: "00:05:00"   # max 1x per 5 minuten
+    mode: single
+    max_exceeded: silent
