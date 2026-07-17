@@ -12,8 +12,9 @@ de iOS companion-apps.
 | Script **Vakantie – vertrekcheck** | Controleert of beide deuren dicht zijn (weigert anders!), zet verwarming tuinhuis + airco + alle lampen + TV uit, schakelt vakantiemodus in en zet Alarmo op *away* |
 | Avondsimulatie | Woonkamer → tafellampen → (soms) leeshoek rond zonsondergang, elke dag met andere willekeurige tijden |
 | Bedtijdsimulatie | Vanaf ±22:30: slaapkamer aan, beneden uit, badkamer kort aan, daarna alles donker — met willekeurige vertragingen |
-| Alarmo afgegaan | Camerasnapshot, alle lampen 100%, beide sirenes aan, **kritieke** pushmelding (doorbreekt stil/focus) naar Mark én Sophie met foto |
-| Rookmelder | Kritieke melding naar beide telefoons + alle lampen aan (staat áltijd aan, ook buiten vakanties) |
+| Alarmo afgegaan | Camerasnapshot, **binnen**lampen 100%, alleen de losse sirene, **kritieke** pushmelding (doorbreekt stil/focus) naar Marks iPhone met foto. Buitenlampen en camerasirenes blijven bewust uit (burenvriendelijk bij vals alarm) |
+| Automatische reset | Zodra Alarmo terugkeert uit "triggered" (of na uiterlijk 10 min als vangnet): sirene uit, binnenlampen uit, melding "alarm gereset". Alarmo herbewapent zichzelf naar *away* |
+| Rookmelder | Kritieke melding naar Marks iPhone + álle lampen aan, ook buiten — bij echt brand wil je juist dat de buurt het ziet (staat áltijd aan, ook buiten vakanties) |
 | Dagrapport 19:00 | Eén melding per dag: alarmstatus, deuren, backup-status, zonopbrengst, verbruik. Blijft dit bericht uit → er is iets mis met HA of internet thuis |
 | Activiteit achterdeur | Melding + snapshot bij camera-events tijdens vakantie |
 | Digitale waakhond (optioneel, standaard uit) | Blafgeluid op de Nest-speaker bij detectie aan de voordeur na zonsondergang |
@@ -36,16 +37,26 @@ de iOS companion-apps.
 
 Open Alarmo (zijbalk) en controleer voor de modus **Away**:
 
-- [ ] Sensoren gekoppeld: voordeur- en achterdeursensor, PIR bijkeuken,
-      PIR voordeur, PIR toilet, bewegingssensor wijn, de drie human presence
-      sensors
-- [ ] De rookmelder **niet** als inbraaksensor (die heeft z'n eigen
-      automatisering)
+- [ ] Sensoren gekoppeld — **alleen binnenshuis**: voordeur- en
+      achterdeursensor, PIR bijkeuken, PIR voordeur, PIR toilet,
+      bewegingssensor wijn en de human presence sensor in de bijkeuken
+- [ ] De **buiten**-presence-sensors (voordeur en achterdeur) **niet** in
+      Alarmo — die zien passanten/katten en veroorzaken valse alarmen. Idem
+      voor de rookmelder (die heeft z'n eigen automatisering)
+- [ ] *Trigger time* van de away-modus op **5 minuten** — daarna keert Alarmo
+      zelf terug naar armed_away en ruimt de reset-automatisering op
 - [ ] Vertraging: *exit delay* mag kort (je armt toch via de app/het script),
       *entry delay* kort (30 s) — je komt toch pas over 2,5 week terug
-- [ ] Sirene-tijd: `number.sensor_sirene_tijd` op het maximum
+- [ ] Sirene-tijd: `number.sensor_sirene_tijd` op ±5 minuten (niet maximaal —
+      de reset zet 'm sowieso uit)
+- [ ] Camera's mogen hun eigen sirene **niet** starten:
+      `switch.bijkeuken_camera_achterdeur_auto_trigger_siren` en
+      `switch.olivier_slaapkamer_camera_olivier_auto_trigger_siren` uit
+- [ ] Controleer dat `notify.iphone_van_mark` je **iPhone 15 Pro** is (er
+      hangt ook nog een oud iPhone 11 Pro-profiel in HA met `_2`-entiteiten —
+      verwijder dat apparaat het liefst helemaal)
 - [ ] Test één keer: arm *away*, loop langs een PIR, kijk of de melding met
-      foto binnenkomt en de sirene afgaat
+      foto binnenkomt, de sirene afgaat én alles na 5 min vanzelf reset
 
 ## iOS: kritieke meldingen testen
 

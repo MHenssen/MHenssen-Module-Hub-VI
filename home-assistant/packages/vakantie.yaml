@@ -154,9 +154,11 @@ automation:
     max_exceeded: silent
 
   # -------------------------------------------------------------------
-  # 3. Alarmo afgegaan → alles aan de bel
-  # Snapshot van de achterdeurcamera, alle lampen vol aan, sirenes aan,
-  # kritieke melding (doorbreekt stil/focus-modus) naar beide telefoons.
+  # 3. Alarmo afgegaan → binnenshuis reageren
+  # Snapshot van de achterdeurcamera, BINNENlampen vol aan, alleen de
+  # losse sirene, kritieke melding (doorbreekt stil/focus) naar Mark.
+  # Buitenlampen/camerasirenes bewust NIET, om de buren te sparen bij
+  # een vals alarm. Automatische reset: zie automatisering hieronder.
   # -------------------------------------------------------------------
   - id: vakantie_alarmo_triggered
     alias: Alarm – Alarmo afgegaan
@@ -172,16 +174,20 @@ automation:
           filename: /config/www/snapshots/alarm_achterdeur.jpg
       - service: light.turn_on
         target:
-          entity_id: all
+          entity_id:
+            - light.woonkamerlampen
+            - light.tafellampen
+            - light.leeshoek
+            - light.speelhoek
+            - light.slaapkamer_3
+            - light.badkamer
         data:
           brightness_pct: 100
       - service: siren.turn_on
         target:
-          entity_id:
-            - siren.sensor_sirene
-            - siren.camera_achterdeur
+          entity_id: siren.sensor_sirene
       - service: notify.iphone_van_mark
-        data: &alarm_melding
+        data:
           title: "🚨 ALARM THUIS"
           message: >-
             Alarmo is afgegaan!
@@ -193,8 +199,46 @@ automation:
                 name: default
                 critical: 1
                 volume: 1.0
-      - service: notify.sophies_iphone
-        data: *alarm_melding
+
+  # -------------------------------------------------------------------
+  # 3b. Automatische reset na een alarm
+  # Alarmo keert zelf terug naar "armed_away" na de ingestelde
+  # triggertijd (zet die in Alarmo op 5 min). Deze automatisering ruimt
+  # daarna op: sirene uit, binnenlampen uit, en een melding dat het
+  # huis weer in rust is. De 10-minuten-trigger is een vangnet voor het
+  # geval Alarmo in "triggered" blijft hangen.
+  # -------------------------------------------------------------------
+  - id: vakantie_alarm_reset
+    alias: Alarm – automatische reset
+    trigger:
+      - platform: state
+        entity_id: alarm_control_panel.alarmo
+        from: "triggered"
+      - platform: state
+        entity_id: alarm_control_panel.alarmo
+        to: "triggered"
+        for: "00:10:00"
+    action:
+      - service: siren.turn_off
+        target:
+          entity_id: siren.sensor_sirene
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.woonkamerlampen
+            - light.tafellampen
+            - light.leeshoek
+            - light.speelhoek
+            - light.slaapkamer_3
+            - light.badkamer
+      - service: notify.iphone_van_mark
+        data:
+          title: "🔄 Alarm gereset"
+          message: >-
+            Sirene en lampen zijn weer uit.
+            Alarmo staat nu op: {{ states('alarm_control_panel.alarmo') }}.
+    mode: single
+    max_exceeded: silent
 
   # -------------------------------------------------------------------
   # 4. Rookmelder → kritieke melding (altijd actief, ook thuis)
@@ -214,7 +258,7 @@ automation:
         data:
           brightness_pct: 100
       - service: notify.iphone_van_mark
-        data: &rook_melding
+        data:
           title: "🔥 ROOKMELDER"
           message: "Rook gedetecteerd thuis! Controleer direct de camera's."
           data:
@@ -223,8 +267,6 @@ automation:
                 name: default
                 critical: 1
                 volume: 1.0
-      - service: notify.sophies_iphone
-        data: *rook_melding
 
   # -------------------------------------------------------------------
   # 5. Dagelijks "alles OK"-rapport om 19:00
@@ -284,9 +326,10 @@ automation:
 
   # -------------------------------------------------------------------
   # 7. OPTIONEEL: digitale waakhond (standaard UIT)
-  # Blaf-geluid op de Nest-speaker als de aanwezigheidssensor bij de
-  # voordeur 's avonds iemand ziet. Zet hiervoor eerst een hond.mp3 in
-  # /media en schakel deze automatisering daarna handmatig in.
+  # Blaf-geluid op een BINNEN-speaker (blaffen vanuit het huis klinkt
+  # geloofwaardiger én stoort de buurt minder) als de buitensensor bij
+  # de voordeur 's avonds iemand ziet. Zet eerst een hond.mp3 in /media
+  # en schakel deze automatisering daarna handmatig in.
   # -------------------------------------------------------------------
   - id: vakantie_waakhond
     alias: Vakantie – digitale waakhond (optioneel)
@@ -306,7 +349,7 @@ automation:
     action:
       - service: media_player.play_media
         target:
-          entity_id: media_player.nest_audio
+          entity_id: media_player.living_room_speaker
         data:
           media_content_id: media-source://media_source/local/hond.mp3
           media_content_type: audio/mpeg
