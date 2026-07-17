@@ -35,7 +35,7 @@ script:
       - choose:
           - conditions: "{{ open_deuren | count > 0 }}"
             sequence:
-              - service: notify.iphone_van_mark
+              - service: notify.mobile_app_iphone_van_mark
                 data:
                   title: "⚠️ Vertrekcheck mislukt"
                   message: "Nog open: {{ open_deuren | join(', ') }}. Vakantiemodus is NIET ingeschakeld."
@@ -63,7 +63,7 @@ script:
         target:
           entity_id: alarm_control_panel.alarmo
       - delay: "00:00:05"
-      - service: notify.iphone_van_mark
+      - service: notify.mobile_app_iphone_van_mark
         data:
           title: "✅ Vakantiemodus actief"
           message: >-
@@ -186,7 +186,7 @@ automation:
       - service: siren.turn_on
         target:
           entity_id: siren.sensor_sirene
-      - service: notify.iphone_van_mark
+      - service: notify.mobile_app_iphone_van_mark
         data:
           title: "🚨 ALARM THUIS"
           message: >-
@@ -231,7 +231,7 @@ automation:
             - light.speelhoek
             - light.slaapkamer_3
             - light.badkamer
-      - service: notify.iphone_van_mark
+      - service: notify.mobile_app_iphone_van_mark
         data:
           title: "🔄 Alarm gereset"
           message: >-
@@ -257,7 +257,7 @@ automation:
           entity_id: all
         data:
           brightness_pct: 100
-      - service: notify.iphone_van_mark
+      - service: notify.mobile_app_iphone_van_mark
         data:
           title: "🔥 ROOKMELDER"
           message: "Rook gedetecteerd thuis! Controleer direct de camera's."
@@ -283,7 +283,7 @@ automation:
         entity_id: input_boolean.vakantiemodus
         state: "on"
     action:
-      - service: notify.iphone_van_mark
+      - service: notify.mobile_app_iphone_van_mark
         data:
           title: "🏠 Dagrapport huis"
           message: >-
@@ -315,7 +315,7 @@ automation:
           entity_id: camera.camera_achterdeur
         data:
           filename: /config/www/snapshots/achterdeur_event.jpg
-      - service: notify.iphone_van_mark
+      - service: notify.mobile_app_iphone_van_mark
         data:
           title: "👀 Activiteit achterdeur"
           message: "De camera bij de achterdeur heeft iets gedetecteerd."

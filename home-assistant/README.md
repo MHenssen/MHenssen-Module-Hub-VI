@@ -52,9 +52,10 @@ Open Alarmo (zijbalk) en controleer voor de modus **Away**:
 - [ ] Camera's mogen hun eigen sirene **niet** starten:
       `switch.bijkeuken_camera_achterdeur_auto_trigger_siren` en
       `switch.olivier_slaapkamer_camera_olivier_auto_trigger_siren` uit
-- [ ] Controleer dat `notify.iphone_van_mark` je **iPhone 15 Pro** is (er
-      hangt ook nog een oud iPhone 11 Pro-profiel in HA met `_2`-entiteiten —
-      verwijder dat apparaat het liefst helemaal)
+- [ ] Controleer dat de meldingsactie `notify.mobile_app_iphone_van_mark`
+      bestaat én je **iPhone 15 Pro** is: Ontwikkelaarshulpmiddelen → Acties →
+      zoek op "mobile_app". (Er hangt ook nog een oud iPhone 11 Pro-profiel in
+      HA — verwijder dat apparaat het liefst helemaal)
 - [ ] Test één keer: arm *away*, loop langs een PIR, kijk of de melding met
       foto binnenkomt, de sirene afgaat én alles na 5 min vanzelf reset
 
