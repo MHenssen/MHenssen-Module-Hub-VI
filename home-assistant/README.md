@@ -155,20 +155,11 @@ Wil je liever dat de lampen uitgaan zodra de muziek stopt (in plaats van
 wachten tot 03:00)? Dat is een extra automatisering met een `for:`-vertraging
 op de mediaspeler; vraag erom als je dat handiger vindt.
 
-## Installeren — kies één van twee
-
-**Optie A (makkelijkst): plakken in de UI.** Gebruik
-`automations/buitenlampen_uit.yaml` — dat is dezelfde logica, maar als één
-losse automatisering. Open Instellingen → Automatiseringen & scènes →
-"Buitenlampen: Automatisch uit (Schema)" → drie puntjes rechtsboven →
-**Bewerken in YAML** → alles selecteren → dit erover plakken → Opslaan.
-Klaar, geen herstart nodig.
-
-**Optie B: als package.** Zie hieronder. Installeer níet allebei — dan
-draaien ze dubbel.
+## Installeren
 
 1. Kopieer `packages/buitenverlichting.yaml` naar
-   `/config/packages/buitenverlichting.yaml`.
+   `/config/packages/buitenverlichting.yaml` (bestaat het bestand al?
+   dan alles selecteren en de nieuwe inhoud erover plakken).
 2. **Controleer de lampenlijst** bovenin het bestand. Hij is afgeleid uit de
    entiteitenlijst; namen als *Bar licht* en *LSC Moodlight* kunnen ook
    binnen hangen. Haal weg wat niet buiten zit.
