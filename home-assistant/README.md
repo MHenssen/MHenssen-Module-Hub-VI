@@ -1,4 +1,14 @@
-# Home Assistant — Vakantiepakket
+# Home Assistant — pakketten
+
+Twee pakketten voor `/config/packages/`:
+
+- **`vakantie.yaml`** — vakantiemodus, aanwezigheidssimulatie en alarmreacties
+  (zie hieronder)
+- **`buitenverlichting.yaml`** — buitenlampen die écht uitgaan (zie onderaan)
+
+---
+
+# Vakantiepakket
 
 Klaar-voor-gebruik "vakantiemodus" voor 2,5 week afwezigheid, gebouwd rond de
 bestaande Alarmo-installatie, de deur-/bewegingssensoren, sirenes, camera's en
@@ -96,3 +106,60 @@ Notificaties).
    ontdooide vriezer bij thuiskomst.
 5. **Camera Olivier**: zet tijdens de vakantie de privacy-mode uit en opname
    aan — extra binnenshuis-oog; thuis kan hij weer op privacy.
+
+---
+
+# Buitenverlichting gegarandeerd uit (`packages/buitenverlichting.yaml`)
+
+## Het probleem
+
+De oude automatisering deed één `scene.turn_on` + één `light.turn_off` en
+hoopte er het beste van. Bij LSC/Tuya-lampen loopt elk commando via de
+Tuya-cloud; stuur je er vijftien tegelijk, dan sneuvelen er standaard één
+of twee — elke nacht een andere. Daar komt bij:
+
+- **`scene.turn_on` schakelt alleen entiteiten die ín de scène staan.** Elke
+  lamp die je later hebt toegevoegd, of die offline was toen je de scène
+  maakte, zit er niet in en gaat dus nooit uit.
+- **Een lamp die om 00:30 offline is** kan niets ontvangen en komt later
+  gewoon brandend weer online.
+
+## De oplossing
+
+`script.buitenlampen_gegarandeerd_uit` stuurt het uit-commando, **controleert
+daarna of het gelukt is**, en herhaalt dat alleen voor de lampen die nog aan
+staan — tot zes keer, met oplopende pauzes (15 s → 30 s → 60 s). Lukt het dan
+nog niet, dan krijg je één stille melding met de namen van de boosdoeners.
+
+Twee automatiseringen roepen dat script aan:
+
+| Automatisering | Wanneer |
+|---|---|
+| `Buitenlampen: automatisch uit (schema)` | zo–do 00:30, vr/za 01:30 (jouw oude tijden) |
+| `Buitenlampen: watchdog (nachtcontrole)` | 02:30, 04:00 en een half uur vóór zonsopkomst |
+
+De watchdog vangt precies de lampen die tijdens het schematijdstip offline
+waren. Staat alles al uit, dan stopt het script direct — geen onnodig
+cloudverkeer.
+
+## Installeren
+
+1. Kopieer `packages/buitenverlichting.yaml` naar
+   `/config/packages/buitenverlichting.yaml`.
+2. **Controleer de lampenlijst** bovenin het bestand. Hij is afgeleid uit de
+   entiteitenlijst; namen als *Bar licht* en *LSC Moodlight* kunnen ook
+   binnen hangen. Haal weg wat niet buiten zit.
+3. Herstart of herlaad de YAML-configuratie.
+4. **Schakel de oude automatisering "Buitenlampen: Automatisch uit (Schema)"
+   uit** (Instellingen → Automatiseringen → drie puntjes → Uitschakelen).
+   Niet verwijderen — voor als je iets wilt terugkijken.
+5. Test overdag: zet een paar buitenlampen aan en voer het script handmatig
+   uit via Instellingen → Automatiseringen & scènes → Scripts.
+
+## Als het daarna nóg misgaat
+
+Kijk in de logboekweergave van de lamp (klik de entiteit → Logboek) of hij
+`unavailable` was. Structureel wegvallende LSC-lampen wijzen op zwak wifi in
+de tuin — een goedkope repeater of een AP buiten lost meer op dan welke
+automatisering ook. Overweeg voor die lampen op termijn Zigbee in plaats van
+Tuya-wifi: lokaal, sneller en zonder cloud die commando's laat vallen.

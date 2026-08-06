@@ -1,0 +1,196 @@
+# =====================================================================
+# Buitenverlichting gegarandeerd uit
+# ---------------------------------------------------------------------
+# Waarom dit bestaat:
+#   Een enkele light.turn_off is "fire and forget". Bij LSC/Tuya-lampen
+#   (cloud) en Shelly (wifi) raakt zo'n commando regelmatig zoek — elke
+#   nacht een andere lamp. Dit script stuurt het commando, CONTROLEERT
+#   daarna of alles echt uit is, en herhaalt dat voor de lampen die nog
+#   aan staan. Plus een watchdog later in de nacht voor lampen die op
+#   het schematijdstip even offline waren.
+#
+# Installatie: kopieer naar /config/packages/buitenverlichting.yaml
+# en schakel daarna je oude automatisering
+# "Buitenlampen: Automatisch uit (Schema)" UIT (niet verwijderen, voor
+# het geval je iets wilt terugkijken).
+#
+# BELANGRIJK: controleer de lijst hieronder! Ik heb hem afgeleid uit je
+# entiteitenlijst, maar namen als "Bar licht" of "LSC Moodlight" kunnen
+# ook binnen hangen. Haal weg wat niet buiten hangt.
+# =====================================================================
+
+script:
+  buitenlampen_gegarandeerd_uit:
+    alias: Buitenlampen – gegarandeerd uit
+    icon: mdi:lightbulb-off-outline
+    mode: single
+    sequence:
+      - variables:
+          buitenlampen:
+            # --- tuin ---
+            - light.tuin_verlichting
+            - light.tuinlamp
+            - light.tuinlamp_2
+            - light.tuinspots
+            - light.tuinlamp_overkap
+            - light.lsc_smart_bulb_rgb_cct        # tuinlamp tuinhuis
+            - light.lsc_smart_gls_a60             # tuinlamp garage
+            - light.lsc_party_string_light_rgbic_cct
+            - light.smart_plug_stopcontact_1      # lamp sterren
+            - light.lsc_garden_spike_eu_stopcontact_1
+            - light.lsc_garden_spike_eu_stopcontact_2
+            - light.bar_licht
+            # --- overkapping ---
+            - light.outdoor_up_down_light_overkapping_3
+            - light.outdoor_up_down_light_overkapping_4
+            - light.outdoor_up_down_light_overkapping_5
+            - light.outdoor_up_down_light_6
+            - light.outdoor_up_down_light_7
+            # --- voordeur ---
+            - light.voordeurlampen
+            - light.voordeur_lamp
+            - light.voordeur_lamp_1
+            - light.voordeur_lamp_3
+            - light.voordeur_lamp_4
+            - light.voordeur_lamp_5
+            - light.floris                        # "Voordeur 3"
+            # --- achtertuin (Shelly dimmer) ---
+            - light.shellydimmer2_24d7ebe9595b
+          # Dezelfde stopcontacten zijn ook als switch bekend; die
+          # meesturen kost niets en vangt af dat de light-entiteit
+          # soms niet reageert.
+          buitenschakelaars:
+            - switch.smart_plug_stopcontact_1
+            - switch.lsc_garden_spike_eu_stopcontact_1
+            - switch.lsc_garden_spike_eu_stopcontact_2
+
+      # Niets aan? Dan direct klaar — zo kan de watchdog dit script
+      # onvoorwaardelijk aanroepen zonder onnodige cloud-commando's.
+      - if:
+          - condition: template
+            value_template: >-
+              {{ (expand(buitenlampen) + expand(buitenschakelaars))
+                 | selectattr('state', 'eq', 'on') | list | count == 0 }}
+        then:
+          - stop: "Alle buitenverlichting staat al uit"
+
+      - repeat:
+          sequence:
+            # Alleen nog de lampen aansturen die daadwerkelijk aan staan.
+            # Scheelt cloud-verkeer en dus kans op drops.
+            - variables:
+                nog_aan: >-
+                  {{ expand(buitenlampen)
+                     | selectattr('state', 'eq', 'on')
+                     | map(attribute='entity_id') | list }}
+                schakelaars_aan: >-
+                  {{ expand(buitenschakelaars)
+                     | selectattr('state', 'eq', 'on')
+                     | map(attribute='entity_id') | list }}
+            - if:
+                - condition: template
+                  value_template: "{{ nog_aan | count > 0 }}"
+              then:
+                - action: light.turn_off
+                  target:
+                    entity_id: "{{ nog_aan }}"
+            - if:
+                - condition: template
+                  value_template: "{{ schakelaars_aan | count > 0 }}"
+              then:
+                - action: switch.turn_off
+                  target:
+                    entity_id: "{{ schakelaars_aan }}"
+            # Even wachten tot de statussen zijn teruggemeld. Tuya-cloud
+            # doet daar soms 10+ seconden over; niet ongeduldig worden.
+            - delay:
+                seconds: "{{ 15 if repeat.index <= 2 else (30 if repeat.index <= 4 else 60) }}"
+          until:
+            - condition: template
+              value_template: >-
+                {{ repeat.index >= 6
+                   or (expand(buitenlampen) | selectattr('state', 'eq', 'on') | list | count == 0
+                       and expand(buitenschakelaars) | selectattr('state', 'eq', 'on') | list | count == 0) }}
+
+      # Alleen melden als het ná 6 pogingen nog niet gelukt is. Geen
+      # nieuws is goed nieuws — anders word je 's nachts wakker van je
+      # eigen automatisering.
+      - variables:
+          restanten: >-
+            {{ (expand(buitenlampen) + expand(buitenschakelaars))
+               | selectattr('state', 'eq', 'on')
+               | map(attribute='name') | list }}
+          onbereikbaar: >-
+            {{ (expand(buitenlampen) + expand(buitenschakelaars))
+               | selectattr('state', 'in', ['unavailable', 'unknown'])
+               | map(attribute='name') | list }}
+      - if:
+          - condition: template
+            value_template: "{{ restanten | count > 0 }}"
+        then:
+          - action: notify.mobile_app_iphone_van_mark
+            data:
+              title: "💡 Buitenlampen niet uit gekregen"
+              message: >-
+                Nog aan na 6 pogingen: {{ restanten | join(', ') }}.
+                {% if onbereikbaar | count > 0 %}
+                Offline: {{ onbereikbaar | join(', ') }}.
+                {% endif %}
+              data:
+                push:
+                  interruption-level: passive   # geen geluid 's nachts
+
+automation:
+  # -------------------------------------------------------------------
+  # Schema — zelfde tijden als voorheen:
+  # zondag t/m donderdag 00:30, vrijdag/zaterdag 01:30
+  # -------------------------------------------------------------------
+  - id: buitenlampen_uit_schema
+    alias: "Buitenlampen: automatisch uit (schema)"
+    triggers:
+      - trigger: time
+        at: "00:30:00"
+        id: doordeweeks
+      - trigger: time
+        at: "01:30:00"
+        id: weekend
+    conditions:
+      - condition: or
+        conditions:
+          - condition: and
+            conditions:
+              - condition: trigger
+                id: doordeweeks
+              - condition: time
+                weekday: [mon, tue, wed, thu]
+          - condition: and
+            conditions:
+              - condition: trigger
+                id: weekend
+              - condition: time
+                weekday: [fri, sat, sun]
+    actions:
+      - action: script.buitenlampen_gegarandeerd_uit
+    mode: single
+
+  # -------------------------------------------------------------------
+  # Watchdog — vangt de lampen die op het schematijdstip offline waren
+  # en later alsnog online komen (nog steeds brandend).
+  # Draait alleen als er daadwerkelijk iets aan staat.
+  # -------------------------------------------------------------------
+  - id: buitenlampen_watchdog
+    alias: "Buitenlampen: watchdog (nachtcontrole)"
+    triggers:
+      - trigger: time
+        at: "02:30:00"
+      - trigger: time
+        at: "04:00:00"
+      - trigger: sun
+        event: sunrise
+        offset: "-00:30:00"
+    # Geen condities nodig: het script stopt zelf meteen als alles al
+    # uit staat. Zo staat de lampenlijst maar op één plek.
+    actions:
+      - action: script.buitenlampen_gegarandeerd_uit
+    mode: single
+    max_exceeded: silent
