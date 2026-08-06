@@ -135,12 +135,25 @@ Twee automatiseringen roepen dat script aan:
 
 | Automatisering | Wanneer |
 |---|---|
-| `Buitenlampen: automatisch uit (schema)` | zo–do 00:30, vr/za 01:30 (jouw oude tijden) |
-| `Buitenlampen: watchdog (nachtcontrole)` | 02:30, 04:00 en een half uur vóór zonsopkomst |
+| `Buitenlampen: automatisch uit (schema)` | zo–do 00:30, vr/za 01:30 (jouw oude tijden) — **tenzij er muziek speelt** |
+| `Buitenlampen: watchdog (nachtcontrole)` | 03:00 (harde deadline), 04:00 en een half uur vóór zonsopkomst |
 
 De watchdog vangt precies de lampen die tijdens het schematijdstip offline
 waren. Staat alles al uit, dan stopt het script direct — geen onnodig
 cloudverkeer.
+
+## Muziek = feestje bezig
+
+Speelt er om 00:30 / 01:30 muziek op de **Nest buiten**
+(`media_player.nest_audio`), de **keukenspeaker**
+(`media_player.chromecastaudio1336`) of de groep **Alle speakers**
+(`media_player.keuken_en_woonkamer`), dan slaat het schema over en blijft de
+buitenverlichting gewoon aan. Om **03:00** gaan de lampen hoe dan ook uit —
+ook als de muziek dan nog speelt.
+
+Wil je liever dat de lampen uitgaan zodra de muziek stopt (in plaats van
+wachten tot 03:00)? Dat is een extra automatisering met een `for:`-vertraging
+op de mediaspeler; vraag erom als je dat handiger vindt.
 
 ## Installeren
 

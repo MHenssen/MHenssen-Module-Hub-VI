@@ -144,6 +144,10 @@ automation:
   # -------------------------------------------------------------------
   # Schema — zelfde tijden als voorheen:
   # zondag t/m donderdag 00:30, vrijdag/zaterdag 01:30
+  #
+  # UITZONDERING: speelt er muziek op de Nest buiten of de keukenspeaker,
+  # dan zit je er nog en blijft de verlichting gewoon aan. De lampen gaan
+  # dan pas om 03:00 uit (zie de watchdog hieronder).
   # -------------------------------------------------------------------
   - id: buitenlampen_uit_schema
     alias: "Buitenlampen: automatisch uit (schema)"
@@ -169,20 +173,31 @@ automation:
                 id: weekend
               - condition: time
                 weekday: [fri, sat, sun]
+      # Muziek buiten/keuken = feestje bezig → nog even niet.
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id:
+              - media_player.nest_audio            # Nest (buiten)
+              - media_player.chromecastaudio1336   # Keuken
+              - media_player.keuken_en_woonkamer   # groep "Alle speakers"
+            state: playing
+            match: any
     actions:
       - action: script.buitenlampen_gegarandeerd_uit
     mode: single
 
   # -------------------------------------------------------------------
-  # Watchdog — vangt de lampen die op het schematijdstip offline waren
-  # en later alsnog online komen (nog steeds brandend).
-  # Draait alleen als er daadwerkelijk iets aan staat.
+  # Watchdog / harde deadline
+  #  - 03:00  : gaat sowieso uit, óók als de muziek nog speelt
+  #  - 04:00 en vóór zonsopkomst: vangnet voor lampen die eerder
+  #    offline waren en later alsnog brandend online kwamen
   # -------------------------------------------------------------------
   - id: buitenlampen_watchdog
     alias: "Buitenlampen: watchdog (nachtcontrole)"
     triggers:
       - trigger: time
-        at: "02:30:00"
+        at: "03:00:00"
       - trigger: time
         at: "04:00:00"
       - trigger: sun
