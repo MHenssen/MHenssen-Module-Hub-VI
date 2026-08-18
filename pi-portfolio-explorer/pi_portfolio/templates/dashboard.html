@@ -1,0 +1,968 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PI Portfolio Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbfbf9;--card:#f6f5f1;--card-bd:#eceae3;--line:#edece6;--ink:#23262e;--label:#6a6f7b;--faint:#9aa0ab;
+--theo:#5b50e6;--accent:#F48025;--adj:#16a87a;--real:#c8821f;--theo-soft:#ece9fc;--accent-soft:#fff0e6;--adj-soft:#def3ea;--real-soft:#f8eddc;
+--sans:'Inter',system-ui,sans-serif;--disp:'Space Grotesk',sans-serif;}
+body[data-theme="dark"]{--bg:#0f1218;--card:#171b24;--card-bd:#2a3040;--line:#293142;--ink:#edf2ff;--label:#adb7c8;--faint:#7f8aa0;
+--theo:#9b8cff;--accent:#F48025;--adj:#25d99a;--real:#f2b766;--theo-soft:#272247;--accent-soft:#3b2113;--adj-soft:#15392d;--real-soft:#3b2c19;}
+body[data-theme="dark"] .ghostbtn,body[data-theme="dark"] .fpill,body[data-theme="dark"] .mchip{background:#121722;color:var(--ink);border-color:var(--card-bd)}
+body[data-theme="dark"] .ghostbtn:hover{border-color:var(--accent);color:var(--accent)}
+body[data-theme="dark"] .filterbar{background:rgba(15,18,24,.92);border-color:var(--card-bd)}
+body[data-theme="dark"] .filterbar select{background:#121722!important;color:#edf2ff!important;-webkit-text-fill-color:#edf2ff;border-color:var(--card-bd);color-scheme:dark}
+body[data-theme="dark"] .card,body[data-theme="dark"] .tcard{background:var(--card);border-color:var(--card-bd)}
+body[data-theme="dark"] .dt th,body[data-theme="dark"] .dt td{border-bottom-color:var(--line)}
+body[data-theme="dark"] .dt tr.tot td{background:#111722;color:var(--ink)}
+body[data-theme="dark"] .subtle,body[data-theme="dark"] .ssub,body[data-theme="dark"] .legend,body[data-theme="dark"] .foot{color:var(--label)}
+body[data-theme="dark"] .mchip.on,body[data-theme="dark"] .fpill.on{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important;box-shadow:0 0 0 1px rgba(244,128,37,.35),0 6px 16px rgba(244,128,37,.18)!important}
+body[data-theme="dark"] .tab.on{background:transparent!important;color:var(--ink)!important;border-bottom-color:var(--accent)!important}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;-webkit-font-smoothing:antialiased;transition:background .18s ease,color .18s ease}
+.wrap{max-width:1180px;margin:0 auto;padding:30px 22px 90px}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:24px}
+.eyebrow{font:600 11px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--disp);font-weight:700;font-size:clamp(23px,3.2vw,31px);margin:.3em 0 .2em;letter-spacing:-.015em}
+header.top p{margin:0;color:var(--label);max-width:60ch}
+.rightcol{display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+.ghostbtn{border:1px solid var(--card-bd);background:#fff;border-radius:9px;padding:8px 14px;font:600 12px var(--sans);color:var(--ink);cursor:pointer}
+.ghostbtn:hover{border-color:var(--accent);color:var(--accent)}
+.themebtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--card-bd);background:#fff;border-radius:999px;color:var(--ink);cursor:pointer;line-height:1;padding:0}
+.themebtn:hover{border-color:var(--accent);color:var(--accent)}
+.themebtn svg{display:block}.themebtn .icon-sun{display:none}
+body[data-theme="dark"] .themebtn{background:#121722;color:var(--ink);border-color:var(--card-bd)}
+body[data-theme="dark"] .themebtn .icon-moon{display:none}
+body[data-theme="dark"] .themebtn .icon-sun{display:block}
+.src{font:600 11px/1 var(--sans);color:var(--adj);background:var(--adj-soft);padding:7px 12px;border-radius:20px;white-space:nowrap}
+.src.sample{color:var(--real);background:var(--real-soft)}
+.card{background:var(--card);border:1px solid var(--card-bd);border-radius:14px}
+section{margin:28px 0}.sh{font-family:var(--disp);font-weight:600;font-size:18px;margin:0 0 3px}
+.ssub{color:var(--label);margin:0 0 14px;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.kpi{padding:15px 18px}
+.kpi .l{font-size:12px;color:var(--label);margin-bottom:8px}.kpi .v{font-family:var(--disp);font-weight:600;font-size:27px;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--faint);margin-top:5px}.kpi .v.g{color:var(--adj)}.kpi .v.p{color:var(--theo)}.kpi .v.o{color:var(--accent)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.tcard{padding:6px 8px 8px;overflow-x:auto}
+.legend{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:12px;margin-top:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:13px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.filterbar{position:sticky;top:0;z-index:20;background:rgba(251,251,249,.92);backdrop-filter:blur(8px);border:1px solid var(--card-bd);border-radius:13px;padding:11px 14px;margin:0 0 20px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.fgroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fgroup>span.lbl{font:600 11px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.fpill{border:1px solid var(--card-bd);background:#fff;border-radius:18px;padding:5px 12px;font:500 12px var(--sans);color:var(--label);cursor:pointer}
+.fpill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.fclear{margin-left:auto;font:600 11px var(--sans);color:var(--accent);cursor:pointer;background:none;border:none}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:0 0 18px}
+.tab{border:none;background:none;padding:10px 14px;font:600 13px var(--sans);color:var(--label);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.tabview{display:none}.tabview.on{display:block}
+.mtoggle{display:flex;gap:6px;flex-wrap:wrap}
+.mchip{border:1px solid var(--card-bd);background:#fff;border-radius:8px;padding:5px 11px;font:600 11px var(--sans);color:var(--label);cursor:pointer}
+.mchip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.dt{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+.dt th{font:600 11px var(--sans);letter-spacing:.03em;color:var(--faint);text-transform:uppercase;text-align:center!important;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.dt td:first-child{text-align:left}
+.dt td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.dt tr:last-child td{border-bottom:none}.dt td.name{font-weight:500;text-align:left}
+/* Full-UI table alignment and content-aware sizing. */
+.dt th,.dt td,.dt td:first-child,.dt td.name{text-align:center!important;vertical-align:middle!important;}
+.dt td>div,.dt td.name>div{margin-left:auto!important;margin-right:auto!important;justify-content:center!important;}
+.dt td .teamPillsWrap{justify-content:center!important;}
+.dt:not(.progress-table){table-layout:auto!important;}
+.dt:not(.progress-table) col{width:auto!important;}
+.dt:not(.progress-table) th,.dt:not(.progress-table) td{width:auto!important;max-width:360px;padding-left:8px;padding-right:8px;}
+#teamTable th:first-child,#teamTable td:first-child{text-align:left!important;width:1%!important;white-space:nowrap;}
+#teamTable td:first-child>div{margin-left:0!important;margin-right:0!important;justify-content:flex-start!important;}
+#dqTable th:nth-child(2),#dqTable td:nth-child(2){width:1%!important;min-width:112px!important;max-width:none!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;}
+#dqTable td:nth-child(2) a{display:inline-block!important;max-width:none!important;width:auto!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;}
+.dt tr.tot td{border-top:1px solid var(--card-bd);background:#fbfaf6;font-weight:600}
+.subtle{color:var(--faint);font-size:12px}
+.statline{display:flex;gap:22px;flex-wrap:wrap;margin:2px 0 14px}
+.statline .b{font:600 12px var(--sans);color:var(--label)}.statline .b b{font-family:var(--disp);font-size:17px;color:var(--ink);margin-right:4px}
+.teamcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.teamcard{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.teamcard h3{margin:0;font-family:var(--disp);font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.teamcard .tpct{font:700 13px var(--disp);color:var(--adj)}
+.pbar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;border-radius:999px;background:var(--adj)}
+.tmeta{display:flex;gap:14px;flex-wrap:wrap;color:var(--label);font-size:12px}
+.tmeta b{color:var(--ink)}
+.plrow{display:flex;align-items:center;gap:8px;font-size:12px}
+.plrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:600}
+.plrow .bar{flex:0 0 90px;height:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.plrow .bar i{display:block;height:100%;background:var(--adj);border-radius:999px}
+.plrow .pv{flex:0 0 auto;font-weight:700;font-variant-numeric:tabular-nums;color:var(--label)}
+.foot{color:var(--faint);font-size:12px;line-height:1.65;margin-top:10px}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.team-kanban{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:14px;align-items:start}.kb-col{background:var(--bg);border:1px solid var(--card-bd);border-radius:14px;overflow:hidden}.kb-head{padding:11px 12px;border-bottom:1px solid var(--card-bd);font:800 13px var(--disp);display:flex;justify-content:space-between}.kb-list{padding:9px;display:grid;gap:8px;max-height:650px;overflow:auto}.kb-card{background:var(--card);border:1px solid var(--card-bd);border-left:4px solid var(--real);border-radius:10px;padding:10px;box-shadow:var(--shadow)}.kb-card.closed{border-left-color:var(--adj)}.kb-card .sum{font:700 12px/1.35 var(--sans);margin:6px 0}.kb-meta{display:flex;flex-wrap:wrap;gap:4px;font-size:10px;color:var(--faint)}.kb-chip{padding:2px 6px;border:1px solid var(--card-bd);border-radius:999px;background:var(--bg)}.team-kanban{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:10px}.kb-col{flex:0 0 300px;background:var(--bg);border:1px solid var(--card-bd);border-radius:8px;overflow:hidden}.kb-head{padding:11px 12px;background:var(--card);border-bottom:1px solid var(--card-bd);font:800 12px var(--disp);display:flex;justify-content:space-between;text-transform:uppercase}.kb-list{padding:10px;display:grid;gap:8px;max-height:700px;overflow:auto}.kb-card{background:var(--card);border:1px solid var(--card-bd);border-left:4px solid var(--accent);border-radius:4px;padding:10px;box-shadow:0 1px 2px rgba(20,28,45,.09)}.kb-card .sum{font:600 13px/1.35 var(--sans);margin:6px 0 8px}.kb-meta{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:10px;color:var(--faint)}.kb-chip{padding:2px 6px;border-radius:3px;background:var(--bg);border:1px solid var(--card-bd)}.kb-avatar{margin-left:auto;width:25px;height:25px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font:800 10px var(--sans)}
+@media(max-width:900px){.team-kanban{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .wrap{padding:24px 16px 76px;max-width:100%}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .tab{flex:0 0 auto;white-space:nowrap;padding:10px 12px}
+  .filterbar{gap:10px;padding:10px 12px}
+  .tcard{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .dt{min-width:640px}
+  .teamcards{grid-template-columns:1fr}
+}
+@media(max-width:640px){body{font-size:13px}.kpis{grid-template-columns:1fr}}
+
+/* Dark-mode scrollbars for ticket columns in the Teams Kanban. */
+body[data-theme="dark"] .tabview[data-v="teams"] .kb-list{
+  scrollbar-color:#747983 #171b23;
+  scrollbar-width:thin;
+}
+body[data-theme="dark"] .tabview[data-v="teams"] .kb-list::-webkit-scrollbar{
+  width:10px;
+}
+body[data-theme="dark"] .tabview[data-v="teams"] .kb-list::-webkit-scrollbar-track{
+  background:#171b23;
+  border-left:1px solid #2c3340;
+  border-radius:999px;
+}
+body[data-theme="dark"] .tabview[data-v="teams"] .kb-list::-webkit-scrollbar-thumb{
+  background:#747983;
+  border:2px solid #171b23;
+  border-radius:999px;
+}
+body[data-theme="dark"] .tabview[data-v="teams"] .kb-list::-webkit-scrollbar-thumb:hover{
+  background:#9aa0aa;
+}
+body[data-theme="dark"] .tabview[data-v="teams"] .kb-list::-webkit-scrollbar-corner{
+  background:#171b23;
+}
+
+/* Width-only Teams Kanban override. */
+.tabview[data-v="teams"] .team-kanban{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important;align-items:start!important}
+.tabview[data-v="teams"] .kb-col{box-sizing:border-box!important;flex:none!important;width:100%!important;min-width:0!important;max-width:100%!important}
+.tabview[data-v="teams"] .kb-head{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+.tabview[data-v="teams"] .kb-card{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important}
+.tabview[data-v="teams"] .kb-card .sum,.tabview[data-v="teams"] .kb-chip{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;max-width:100%!important}
+</style></head><body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="eyebrow">PI Portfolio · all teams</div>
+    <h1>Parent Link &amp; Epic progress</h1>
+    <p id="subline">Every Epic on the Kanban board for the target PI, classified by Parent Link, Epic progress and Team — globally and per team.</p>
+  </div>
+  <div class="rightcol">
+    <button class="themebtn" id="themeToggle" type="button" title="Toggle dark mode">
+      <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+    <span class="src" id="src">—</span>
+  </div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="filterbar">
+  <div class="fgroup"><span class="lbl">Team</span><span id="teamPills"></span></div>
+  <button class="fclear" id="clearFilters" type="button">Reset filters</button>
+</div>
+
+<div class="tabview" data-v="overview">
+  <section>
+    <div class="kpis" id="kpis"></div>
+  </section>
+  <section>
+    <div class="toolbar"><div><h2 class="sh">Progress per team</h2><p class="ssub">Story points assigned to sprints of this PI versus SP from tickets whose status is exactly Closed. Historical and unplanned SP is excluded. Click a row to focus the dashboard on that team.</p></div></div>
+    <div class="card tcard"><table class="dt" id="teamTable"></table></div>
+  </section>
+  <section>
+    <div class="toolbar"><div><h2 class="sh" id="overviewParentTitle">Progress per Parent Link</h2><p class="ssub">PI-planned SP versus exact-Closed ticket SP across all teams for each Parent Link.</p></div></div>
+    <div class="card tcard"><table class="dt" id="globalParentTable"></table></div>
+  </section>
+</div>
+
+<div class="tabview" data-v="parentlinks">
+  <div class="toolbar"><div><h2 class="sh">Parent Link progress</h2><p class="ssub" id="plSub">Complete Parent Link progress and combined Epic sprint movement. Expand a Parent Link to inspect its Epics.</p></div></div>
+  <div class="kpis" id="parentOverallKpis" style="margin-bottom:12px"></div>
+  <div class="card" style="padding:14px 16px;margin-bottom:12px">
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+      <div class="fgroup"><span class="lbl">Product</span><span class="mtoggle" id="parentProduct"></span></div>
+      <div class="fgroup"><span class="lbl">Sort</span><span class="mtoggle" id="parentSort"></span></div>
+    </div>
+    <div class="legend" id="parentLegend" style="margin-top:10px"></div>
+  </div>
+  <div id="parentLinkToggleBar" style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin:8px 0 10px">
+    <button class="ghostbtn" id="toggleAllParentLinks" type="button">Expand all</button>
+  </div>
+  <div class="card tcard"><table class="dt" id="parentLinkTable"></table></div>
+</div>
+
+<div class="tabview" data-v="teams">
+  <div class="toolbar"><div><h2 class="sh">Teams · PI ticket Kanban</h2><p class="ssub">Selected-PI tickets grouped by workflow state. Filter by team, product and Parent Link.</p></div></div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+      <div class="fgroup"><span class="lbl">Team</span><span class="mtoggle" id="kanbanTeam"></span></div>
+      <div class="fgroup"><span class="lbl">Product</span><span class="mtoggle" id="kanbanProduct"></span></div>
+      <div class="fgroup"><span class="lbl">Parent Link</span><span class="mtoggle" id="kanbanParent"></span></div>
+      <div class="fgroup"><span class="lbl">Sprint</span><span class="mtoggle" id="kanbanSprint"></span></div>
+    </div>
+    <div class="legend" id="kanbanLegend" style="margin-top:10px"></div>
+  </div>
+  <div class="card tcard" style="margin-bottom:14px"><table class="dt" id="kanbanSummary"></table></div>
+  <div id="teamKanban" class="team-kanban"></div>
+</div>
+
+<div class="tabview" data-v="progress">
+  <div class="toolbar"><div><h2 class="sh">Epic progress</h2><p class="ssub">Actual sprint movement per Epic from child-ticket sprint codes, plus done-SP progress. Filter by team above, and by parent link / priority below.</p></div></div>
+  <div class="kpis" id="progressOverallKpis" style="margin-bottom:12px"></div>
+  <div class="card" style="padding:14px 16px;margin-bottom:12px">
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+      <div class="fgroup"><span class="lbl">Product</span><span class="mtoggle" id="progressProduct"></span></div>
+      <div class="fgroup"><span class="lbl">Parent link</span><span class="mtoggle" id="progressParent"></span></div>
+      <div class="fgroup"><span class="lbl">Sort</span><span class="mtoggle" id="progressSort"></span></div>
+    </div>
+    <div class="legend" id="progressLegend" style="margin-top:10px"></div>
+  </div>
+  <div id="progressToggleBar" style="display:none;gap:8px;justify-content:flex-end;align-items:center;margin:8px 0 10px">
+    <button class="ghostbtn" id="toggleAllProgressTickets" type="button">Expand all</button>
+  </div>
+  <div class="card tcard"><div id="epicProgressGantt" style="overflow:auto"></div></div>
+</div>
+
+<div class="tabview" data-v="portfolio">
+  <div class="toolbar"><div><h2 class="sh">PI portfolio detail</h2><p class="ssub">Full Parent Link and Epic information for the selected PI, with the PI progress table per team.</p></div></div>
+  <div class="kpis" id="portfolioKpis" style="margin-bottom:12px"></div>
+  <div class="card tcard" style="margin-bottom:16px"><table class="dt" id="portfolioTeams"></table></div>
+  <div style="display:flex;justify-content:flex-end;margin:8px 0 10px"><button class="ghostbtn" id="portfolioExpandAll">Expand all</button></div>
+  <div class="card tcard"><table class="dt" id="portfolioParents"></table></div>
+</div>
+
+<div class="tabview" data-v="predictability">
+  <div class="toolbar"><div><h2 class="sh">Sprint predictability</h2><p class="ssub">Final commitment and Completed work per team and sprint, loaded from the Jira velocity data.</p></div></div>
+  <div class="card" style="padding:14px 16px;margin-bottom:12px">
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+      <div class="fgroup"><span class="lbl">Group by</span><span class="mtoggle" id="predGroup"></span></div>
+      <div class="fgroup"><span class="lbl">Team</span><span class="mtoggle" id="predTeam"></span></div>
+      <div class="fgroup"><span class="lbl">PI sprints</span><span class="mtoggle" id="predProduct"></span></div>
+    </div>
+    <div class="legend" id="predLegend" style="margin-top:10px"></div>
+  </div>
+  <div class="kpis" id="predKpis" style="margin-bottom:18px"></div>
+  <div class="grid2" style="gap:18px">
+    <div class="card" style="padding:18px;margin-bottom:18px"><h3 class="sh" style="font-size:15px">Overall predictability</h3><div id="predDonut"></div></div>
+    <div class="card" style="padding:18px"><h3 class="sh" style="font-size:15px">Committed vs completed</h3><div id="predBars"></div></div>
+  </div>
+  <div class="card tcard" style="margin-top:14px"><table class="dt" id="predTable"></table></div>
+</div>
+
+<div class="tabview" data-v="quality">
+  <div class="toolbar"><div><h2 class="sh">Data quality — refinement issues</h2><p class="ssub" id="dqSub">Epics and tickets that need attention before commitment: missing parent link, missing/zero story points, no child tickets, Epic SP not matching tickets SP, missing team / category, tickets without a sprint. Ticket SP and category are only checked on Epic, Improvement, Bug and Story.</p></div><div class="fgroup"><span class="lbl">Organize by</span><span class="mtoggle" id="qualityGroup"></span></div></div>
+  <div class="kpis" id="dqKpis" style="margin-bottom:12px"></div>
+  <div id="dqToggleBar" style="display:flex;gap:8px;justify-content:flex-end;align-items:center;margin:8px 0 10px">
+    <button class="ghostbtn" id="toggleAllDq" type="button">Expand all</button>
+  </div>
+  <div class="card tcard"><table class="dt" id="dqTable"></table></div>
+</div>
+
+<p class="foot" id="foot"></p>
+</div>
+<script>
+const DATA=/*__DATA__*/null, SERVED=/*__SERVED__*/false;
+const META=(DATA&&DATA.meta)||{};
+const NS=Math.max(1,+META.numSprints||6);
+const EPICS=(DATA&&DATA.epics)||[];
+const BOARD_TICKETS=(DATA&&DATA.boardTickets)||[];
+const COMMITMENT=(DATA&&DATA.commitment)||{};
+const PREDICTABILITY=(DATA&&DATA.predictability)||{};
+const escHtml=s=>String(s||"").replace(/[&<>\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch]));
+const jiraBase=String(META.jiraUrl||"").replace(/\/+$/g,"");
+const f1=n=>{const v=+n;return Number.isFinite(v)?(Math.round(v*10)/10).toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:1}):"0";};
+const pc=n=>`${Math.round(+n||0)}%`;
+const issueUrl=k=>jiraBase?`${jiraBase}/browse/${encodeURIComponent(k)}`:"#";
+const issueLink=(k,w="110px")=>{const key=String(k||"").trim();if(!key)return "";return `<a href="${issueUrl(key)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="display:inline-block;max-width:${w};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent);font-weight:800;text-decoration:none">${escHtml(key)}</a>`;};
+
+/* ---------- epic math ---------- */
+const exactClosedStatus=v=>String(v||"").trim().toLowerCase()==="closed";
+// Completed SP includes Closed and Verified/Verifies tickets. Epic closure
+// remains based on exact Closed status, preserving closure-pending behavior.
+const completedSpStatus=v=>{
+  const status=String(v||"").trim().toLowerCase();
+  return status==="closed"||status==="verified"||status==="verifies";
+};
+const epicStatusClosed=e=>exactClosedStatus(e&&e.status);
+const allEpicTicketsClosed=e=>{const ts=(e&&e.tickets)||[];return ts.length>0&&ts.every(t=>t&&exactClosedStatus(t.status));};
+function epicDone(e){return epicStatusClosed(e)&&allEpicTicketsClosed(e);}
+const epicClosurePending=e=>allEpicTicketsClosed(e)&&!epicStatusClosed(e);
+function epicTotal(e){const t=+((e&&e.totalSp)||0),s=+((e&&e.sp)||0),d=+((e&&e.doneSp)||0);return Math.max(t,s,d);}
+function epicDoneSp(e){
+  const total=epicTotal(e);
+  const tickets=(e&&e.tickets)||[];
+  const closedTicketSp=tickets.filter(t=>t&&exactClosedStatus(t.status)).reduce((sum,t)=>sum+(+(t.sp||0)),0);
+  if(tickets.length)return Math.min(total||closedTicketSp,closedTicketSp);
+  return epicStatusClosed(e)?total:0;
+}
+function epicPct(e){
+  const total=epicTotal(e);
+  if(!(total>0))return epicDone(e)?100:0;
+  const raw=Math.min(100,100*epicDoneSp(e)/total);
+  return !epicDone(e)&&raw>=100?99:raw;
+}
+const selectedPiCode=()=>String(META.piName||"").replace(/^PI\s*/,"").trim();
+// Normalize Jira/Excel sprint labels to the canonical PI.iteration code.
+// Supported examples: 26.3.1, PI 26.3.1, PI 26.3 Sprint 1,
+// 26.3 - Sprint 1, and Jira's longer sprint display strings.
+function canonicalSprintCode(value){
+  const text=String(value||"").trim(),pi=selectedPiCode().replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  let match=text.match(new RegExp(`(?:PI\\s*)?(${pi})\\s*[.]\\s*(\\d+)`,"i"));
+  if(!match)match=text.match(new RegExp(`(?:PI\\s*)?(${pi}).*?(?:sprint|iteration)\\s*[-:#]?\\s*(\\d+)`,"i"));
+  return match?`${match[1]}.${parseInt(match[2],10)}`:"";
+}
+const sprintBelongsToSelectedPi=value=>Boolean(canonicalSprintCode(value));
+const ticketPiSprints=t=>[...new Set((Array.isArray(t&&t.sprints)?t.sprints:[t&&t.sprints]).map(canonicalSprintCode).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+const piPlannedTickets=e=>(e&&e.tickets||[]).filter(t=>(t.sprints||[]).some(sprintBelongsToSelectedPi));
+// Epic-level PI scope uses Jira's remaining Epic SP value (e.sp).
+// Ticket rows keep their own SP values and sprint assignments unchanged.
+const piPlannedSp=e=>Math.max(0,+((e&&e.sp)||0));
+const piClosedSp=e=>piPlannedTickets(e).filter(t=>completedSpStatus(t.status)).reduce((sum,t)=>sum+(+(t.sp||0)),0);
+const piEpicDone=e=>{const ts=piPlannedTickets(e);return ts.length>0&&ts.every(t=>exactClosedStatus(t.status));};
+// Progress views use the complete selected-PI ticket scope as denominator.
+// Example: Closed tickets 5+3 and all PI tickets 5+8+1+3 => 8 / 17 SP.
+const piProgressTotalSp=e=>{
+  const ticketTotal=piPlannedTickets(e).reduce((sum,t)=>sum+(+(t.sp||0)),0);
+  return ticketTotal>0?ticketTotal:piPlannedSp(e);
+};
+const piProgressClosedSp=e=>Math.min(piProgressTotalSp(e),piClosedSp(e));
+const piProgressClosurePending=e=>piEpicDone(e)&&!epicStatusClosed(e);
+function piProgressPct(e){
+  const total=piProgressTotalSp(e),done=piProgressClosedSp(e);
+  if(!(total>0))return epicStatusClosed(e)?100:0;
+  const raw=Math.min(100,100*done/total);
+  return piProgressClosurePending(e)&&raw>=100?99:raw;
+}
+const piProgressWeightedDone=e=>piProgressTotalSp(e)*piProgressPct(e)/100;
+const teamOf=e=>String((e&&e.team)||"").trim()||"No team";
+const closurePendingBadge=e=>epicClosurePending(e)?`<span title="All tickets are Closed, but the Epic is not Closed" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:5px;border-radius:999px;background:var(--real-soft);color:var(--real);font-weight:900;font-size:13px">*</span>`:"";
+const plKey=e=>String((e&&e.parentLink)||"").trim()||"No parent link";
+const plName=e=>String((e&&e.parentLinkName)||"").trim()||plKey(e);
+const productOf=e=>{const vals=[e&&e.key,plKey(e),plName(e)].map(v=>String(v||"").trim().toUpperCase());return vals.some(v=>v.startsWith("SPO4-"))?"spo4":"maintain";};
+const PRODUCT_OPTIONS=[["all","All products"],["spo4","SPO4"],["maintain","Maintain"]];
+const productLabel=v=>v==="spo4"?"SPO4":v==="maintain"?"Maintain":"All products";
+const productFiltered=epics=>fProduct==="all"?(epics||[]).slice():(epics||[]).filter(e=>productOf(e)===fProduct);
+
+/* ---------- state ---------- */
+let tab="overview", fTeam="All", fProduct="all", progressParent="all", progressSort="epic", parentGanttSort="name", qualityGroup="epic", kanbanTeam="All", kanbanProduct="all", kanbanParent="all", kanbanSprint="all", predGroup="sprint", predTeam="All", predProduct="all";
+const ticketTeamOf=t=>String((t&&t.team)||"").trim()||"No team";
+// Allocate each Epic's remaining PI SP across the Teams that own its PI tickets.
+// Known ticket SP stays with the ticket Team. Any remaining, not-yet-created
+// scope stays with the Epic Team. If ticket SP exceeds the Epic remainder, the
+// remainder is distributed proportionally so the Epic is never double-counted.
+function epicSpByTicketTeam(e){
+  const remaining=piPlannedSp(e), epicTeam=teamOf(e), tickets=piPlannedTickets(e);
+  const raw={}, closed={};
+  tickets.forEach(t=>{
+    const team=ticketTeamOf(t),sp=+(t.sp||0);
+    raw[team]=(raw[team]||0)+sp;
+    if(completedSpStatus(t.status))closed[team]=(closed[team]||0)+sp;
+  });
+  const ticketTotal=Object.values(raw).reduce((a,v)=>a+v,0),planned={};
+  if(ticketTotal>0&&ticketTotal>remaining&&remaining>=0){
+    Object.entries(raw).forEach(([team,sp])=>planned[team]=remaining*sp/ticketTotal);
+  }else{
+    Object.entries(raw).forEach(([team,sp])=>planned[team]=sp);
+    const residual=Math.max(0,remaining-ticketTotal);
+    if(residual>0)planned[epicTeam]=(planned[epicTeam]||0)+residual;
+  }
+  if(!Object.keys(planned).length&&remaining>0)planned[epicTeam]=remaining;
+  return {planned,closed,ticketTeams:new Set(tickets.map(ticketTeamOf))};
+}
+// Merge board records with the child tickets stored under each Epic. A board
+// record may be newer for status/assignee but occasionally lacks sprint or Team
+// fields after Sync. The Epic-child record supplies those missing fields so the
+// Teams Kanban never becomes empty only because one Jira endpoint was incomplete.
+const EPIC_CHILD_TICKETS=EPICS.flatMap(e=>(e.tickets||[]).map(t=>({...t,epicKey:t.epicKey||e.key})));
+const MERGED_TICKET_MAP=new Map(EPIC_CHILD_TICKETS.map(t=>[String(t.key||""),{...t}]));
+BOARD_TICKETS.forEach(t=>{
+  const key=String(t.key||""),child=MERGED_TICKET_MAP.get(key)||{};
+  MERGED_TICKET_MAP.set(key,{
+    ...child,...t,
+    epicKey:t.epicKey||child.epicKey||"",
+    team:(t.team&&t.team!=="No team")?t.team:(child.team||"No team"),
+    sprints:(t.sprints||[]).length?(t.sprints||[]):(child.sprints||[]),
+    sp:(t.sp!==undefined&&t.sp!==null&&t.sp!=="")?t.sp:child.sp,
+  });
+});
+const TEAM_SOURCE_TICKETS=[...MERGED_TICKET_MAP.values()];
+// Team filters contain only Teams that own at least one ticket in a selected-PI
+// sprint. Fast Sync reuses these sprint assignments from the existing Excel cache.
+const PI_TEAM_TICKETS=TEAM_SOURCE_TICKETS.filter(t=>ticketPiSprints(t).length);
+const TEAMS=[...new Set(PI_TEAM_TICKETS.map(ticketTeamOf))].sort((a,b)=>a.localeCompare(b));
+const TABS=[["overview","Overview"],["teams","Teams"],["parentlinks","Parent links"],["progress","Epic progress"],["predictability","Predictability"],["portfolio","PI portfolio detail"],["quality","Data quality"]];
+
+/* ---------- team colors (stable per team, like categories in Capacity Planner) ---------- */
+const TPAL=["#5b50e6","#16a87a","#c8821f","#2f7fd6","#c2569b","#7a8a3a","#e4572e","#17bebb","#7d5fff","#d65db1","#2c73d2","#f9a03f"];
+const TC={};TEAMS.filter(t=>t!=="No team").forEach((t,i)=>TC[t]=TPAL[i%TPAL.length]);
+const teamColor=t=>t==="No team"?"#9aa0a6":(TC[t]||"#9aa0a6");
+const teamDot=(t,s=10)=>`<span style="display:inline-block;width:${s}px;height:${s}px;border-radius:3px;background:${teamColor(t)};flex:0 0 auto"></span>`;
+const teamPill=(t,max="150px")=>{const c=teamColor(t);return `<span title="${escHtml(t)}" style="display:inline-flex;align-items:center;max-width:${max};height:22px;padding:0 9px;border-radius:999px;color:${c};background:${c}1f;font:400 11px var(--sans);overflow:hidden;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${escHtml(t)}</span></span>`;};
+const teamPillsWrap=teams=>`<div class="teamPillsWrap" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center">${[...teams].sort().map(t=>teamPill(t)).join("")}</div>`;
+
+function buildTeamScope(){
+  const groups={};
+  const ensure=t=>groups[t]||(groups[t]={team:t,total:0,done:0,epics:new Set(),doneEpics:new Set(),parents:new Set()});
+  EPICS.forEach(e=>{
+    const allocation=epicSpByTicketTeam(e);
+    const teams=new Set([...Object.keys(allocation.planned),...Object.keys(allocation.closed)]);
+    teams.forEach(team=>{
+      const g=ensure(team),planned=+(allocation.planned[team]||0),closed=+(allocation.closed[team]||0);
+      g.total+=planned;
+      g.done+=Math.min(planned,closed);
+      if(planned>0){g.epics.add(e.key);g.parents.add(plKey(e));if(piEpicDone(e))g.doneEpics.add(e.key);}
+    });
+  });
+  return groups;
+}
+function selectedTeamScope(){
+  const groups=buildTeamScope();
+  if(fTeam!=="All")return groups[fTeam]||{team:fTeam,total:0,done:0,epics:new Set(),doneEpics:new Set(),parents:new Set()};
+  const all={team:"All",total:0,done:0,epics:new Set(),doneEpics:new Set(),parents:new Set()};
+  Object.values(groups).forEach(g=>{all.total+=g.total;all.done+=g.done;g.epics.forEach(x=>all.epics.add(x));g.doneEpics.forEach(x=>all.doneEpics.add(x));g.parents.forEach(x=>all.parents.add(x));});
+  return all;
+}
+function teamAllocatedPlannedSp(e,team=fTeam){
+  if(team==="All")return piPlannedSp(e);
+  return +((epicSpByTicketTeam(e).planned||{})[team]||0);
+}
+function epicBelongsToTeam(e,team=fTeam){
+  if(team==="All")return true;
+  if(teamOf(e)===team)return true;
+  const allocation=epicSpByTicketTeam(e);
+  if(+((allocation.planned||{})[team]||0)>0)return true;
+  if(+((allocation.closed||{})[team]||0)>0)return true;
+  return piPlannedTickets(e).some(t=>ticketTeamOf(t)===team);
+}
+function filteredEpics(){return fTeam==="All"?EPICS.slice():EPICS.filter(e=>epicBelongsToTeam(e,fTeam));}
+function groupByParent(epics){
+  const groups={};
+  (epics||[]).forEach(e=>{
+    const key=plKey(e), name=plName(e);
+    if(!groups[key])groups[key]={key,name,total:0,done:0,count:0,doneCount:0,teams:new Set(),epics:[]};
+    if(name&&name!==key)groups[key].name=name;
+    groups[key].total+=epicTotal(e);
+    groups[key].done+=epicDoneSp(e);
+    groups[key].count+=1;
+    if(epicDone(e))groups[key].doneCount+=1;
+    groups[key].teams.add(teamOf(e));
+    groups[key].epics.push(e);
+  });
+  return Object.values(groups).sort((a,b)=>b.total!==a.total?b.total-a.total:String(a.key).localeCompare(String(b.key)));
+}
+function plLabelHtml(key,name,w="430px"){
+  const k=String(key||"").trim();
+  const n=String(name||k||"No parent link").trim();
+  const title=k&&n&&n!==k?`${k} · ${n}`:n;
+  const code=/^[A-Z][A-Z0-9]+-\d+$/.test(k)
+    ? `<a href="${issueUrl(k)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="flex:0 0 auto;color:var(--accent);font-weight:900;text-decoration:none;white-space:nowrap">${escHtml(k)}</a>`
+    : `<span style="flex:0 0 auto;font-weight:900;color:${k&&k!=="No parent link"?"var(--ink)":"var(--faint)"};white-space:nowrap">${escHtml(k||"No parent link")}</span>`;
+  const namePart=(n&&n!==k)?`<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:700">${escHtml(n)}</span>`:"";
+  return `<div title="${escHtml(title)}" style="max-width:${w};display:flex;align-items:center;gap:8px;white-space:nowrap">${code}${namePart}</div>`;
+}
+const bar=(pct,w=100,h=12)=>{const width=typeof w==="number"?`${w}px`:String(w);return `<div style="height:${h}px;width:${width};background:var(--line);border-radius:999px;overflow:hidden"><div style="height:${h}px;width:${Math.max(0,Math.min(100,pct))}%;background:var(--adj);border-radius:999px"></div></div>`;};
+
+/* ---------- tabs + filters ---------- */
+function renderTabs(){
+  document.getElementById("tabs").innerHTML=TABS.map(([id,label])=>`<button class="tab${tab===id?" on":""}" data-tab="${id}">${label}</button>`).join("");
+  document.querySelectorAll("#tabs .tab").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderTabs();updateTabDOM();renderActive();});
+  updateTabDOM();
+}
+function updateTabDOM(){document.querySelectorAll(".tabview").forEach(v=>v.classList.toggle("on",v.dataset.v===tab));}
+function renderTeamPills(){
+  if(fTeam!=="All"&&!TEAMS.includes(fTeam))fTeam="All";
+  const opts=["All",...TEAMS];
+  document.getElementById("teamPills").innerHTML=opts.map(t=>`<button class="fpill${fTeam===t?" on":""}" data-team="${escHtml(t)}" style="display:inline-flex;align-items:center;gap:6px">${t==="All"?"":teamDot(t,9)}${escHtml(t)}</button>`).join(" ");
+  document.querySelectorAll("#teamPills .fpill").forEach(b=>b.onclick=()=>{fTeam=b.dataset.team;renderTeamPills();renderActive();});
+}
+function chips(id,options,current,onPick){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=options.map(([v,label])=>`<button class="mchip${current===v?" on":""}" data-v="${escHtml(v)}">${escHtml(label)}</button>`).join("");
+  el.querySelectorAll(".mchip").forEach(b=>b.onclick=()=>onPick(b.dataset.v));
+}
+
+/* ---------- overview ---------- */
+function renderKpis(){
+  const epics=filteredEpics();
+  const selected=selectedTeamScope();
+  const total=selected.total;
+  // Use the exact same PI Closed SP values as the Teams table.
+  const teamsClosedSp={};
+  EPICS.forEach(e=>{
+    const allocation=epicSpByTicketTeam(e);
+    Object.entries(allocation.closed||{}).forEach(([team,sp])=>teamsClosedSp[team]=(teamsClosedSp[team]||0)+(+sp||0));
+  });
+  const done=fTeam==="All"?Object.values(teamsClosedSp).reduce((sum,sp)=>sum+sp,0):(teamsClosedSp[fTeam]||0);
+  const pctv=total>0?100*done/total:0;
+  const parents=new Set(epics.map(plKey));
+  const teams=new Set(epics.map(teamOf));
+  const doneEpics=epics.filter(piEpicDone).length;
+  const scope=fTeam==="All"?"all teams":fTeam;
+  document.getElementById("kpis").innerHTML=`
+    <div class="card kpi"><div class="l">PI planned SP · ${escHtml(scope)}</div><div class="v">${f1(total)}</div><div class="s">PI ${escHtml(META.piName||"")}</div></div>
+    <div class="card kpi"><div class="l">PI Closed SP</div><div class="v g">${f1(done)}</div><div class="s">${pc(pctv)} of total</div></div>
+    <div class="card kpi"><div class="l">Epics</div><div class="v">${epics.length}</div><div class="s">${doneEpics} done</div></div>
+    <div class="card kpi"><div class="l">Parent links</div><div class="v p">${parents.size}</div><div class="s">across ${teams.size} team(s)</div></div>
+    <div class="card kpi"><div class="l">Overall progress</div><div class="v o">${pc(pctv)}</div><div class="s" style="margin-top:8px">${bar(pctv,"100%",8)}</div></div>`;
+}
+function renderTeamTable(){
+  // Overview totals use the same remaining Epic SP shown on each Epic row.
+  // Grouping stays at Epic level, so the visual structure and styling are unchanged.
+  const groups={};
+  EPICS.forEach(e=>{
+    const allocation=epicSpByTicketTeam(e),piTickets=piPlannedTickets(e),teams=new Set([...Object.keys(allocation.planned),...Object.keys(allocation.closed)]);
+    teams.forEach(team=>{
+      const g=groups[team]||(groups[team]={team,total:0,done:0,epics:new Set(),doneEpics:new Set(),parents:new Set()});
+      g.total+=allocation.planned[team]||0;
+      g.done+=allocation.closed[team]||0;
+      g.epics.add(e.key);g.parents.add(plKey(e));if(piEpicDone(e))g.doneEpics.add(e.key);
+    });
+  });
+  const rows=Object.values(groups).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
+  let html=`<colgroup><col style="width:auto"><col style="width:90px"><col style="width:90px"><col style="width:80px"><col style="width:80px"><col style="width:100px"><col style="width:130px"></colgroup><thead><tr><th>Team</th><th>PI planned SP</th><th>PI Closed SP</th><th>Progress</th><th>Epics</th><th>Parent links</th><th>Done / total bar</th></tr></thead><tbody>`;
+  if(!rows.length)html+=`<tr><td colspan="7" style="color:#888">No PI-planned ticket scope found yet. Run Sync first.</td></tr>`;
+  let T=0,D=0,allEpics=new Set(),allDoneEpics=new Set(),allParents=new Set();
+  rows.forEach(g=>{
+    T+=g.total;D+=g.done;g.epics.forEach(x=>allEpics.add(x));g.doneEpics.forEach(x=>allDoneEpics.add(x));g.parents.forEach(x=>allParents.add(x));
+    const pct=g.total>0?100*g.done/g.total:0,on=fTeam===g.team;
+    html+=`<tr data-teamrow="${escHtml(g.team)}" style="cursor:pointer${on?";outline:2px solid var(--accent);outline-offset:-2px":""}"><td class="name" style="font-weight:700"><span style="display:inline-flex;align-items:center;gap:8px">${teamDot(g.team)}${escHtml(g.team)}</span></td><td style="font-weight:800">${f1(g.total)}</td><td style="font-weight:800;color:var(--adj)">${f1(g.done)}</td><td style="font-weight:800">${pc(pct)}</td><td>${g.doneEpics.size}/${g.epics.size}</td><td>${g.parents.size}</td><td>${bar(pct,110)}</td></tr>`;
+  });
+  const tpct=T>0?100*D/T:0;
+  html+=`<tr class="tot"><td class="name">All teams</td><td>${f1(T)}</td><td style="color:var(--adj)">${f1(D)}</td><td>${pc(tpct)}</td><td>${allDoneEpics.size}/${allEpics.size}</td><td>${allParents.size}</td><td>${bar(tpct,110)}</td></tr></tbody>`;
+  const el=document.getElementById("teamTable");el.innerHTML=html;
+  el.querySelectorAll("[data-teamrow]").forEach(r=>r.onclick=()=>{const t=r.dataset.teamrow;fTeam=fTeam===t?"All":t;renderTeamPills();renderActive();});
+}
+function renderGlobalParentTable(){
+  const overviewTitle=document.getElementById("overviewParentTitle");
+  if(overviewTitle)overviewTitle.textContent=`Progress per Parent Link (PI ${String(META.piName||"?").replace(/^PI\s*/,"")})`;
+  const map={};
+  EPICS.forEach(e=>{const key=plKey(e),name=plName(e);if(!map[key])map[key]={key,name,total:0,done:0,count:0,doneCount:0,teams:new Set(),epics:[]};const g=map[key];g.total+=piPlannedSp(e);g.done+=piClosedSp(e);g.count++;if(piEpicDone(e))g.doneCount++;g.teams.add(teamOf(e));g.epics.push(e);});
+  const rows=Object.values(map).sort((a,b)=>b.total-a.total);
+  let html=`<colgroup><col style="width:300px"><col style="width:auto"><col style="width:90px"><col style="width:90px"><col style="width:80px"><col style="width:70px"><col style="width:130px"></colgroup><thead><tr><th>Parent Link</th><th>Teams</th><th>Total SP</th><th>Done SP</th><th>Progress</th><th>Epics</th><th>Done / total bar</th></tr></thead><tbody>`;
+  if(!rows.length)html+=`<tr><td colspan="7" style="color:#888">No Epics found yet. Run Sync first.</td></tr>`;
+  rows.forEach(g=>{
+    const pct=g.total>0?100*g.done/g.total:0;
+    html+=`<tr><td class="name">${plLabelHtml(g.key,g.name,"290px")}</td><td style="text-align:left">${teamPillsWrap(g.teams)}</td><td style="font-weight:800">${f1(g.total)}</td><td style="font-weight:800;color:var(--adj)">${f1(g.done)}</td><td style="font-weight:800">${pc(pct)}</td><td>${g.doneCount}/${g.count}</td><td>${bar(pct,110)}</td></tr>`;
+  });
+  html+=`</tbody>`;
+  document.getElementById("globalParentTable").innerHTML=html;
+}
+
+/* ---------- overall ticket-SP progress ---------- */
+function renderProgressOverall(elementId,epics,scopeLabel,resultType="epic"){
+  const el=document.getElementById(elementId);if(!el)return;
+  const rows=epics||[];
+  // Use the same unique selected-team PI tickets as Data Quality Refined SP.
+  // Do not add the Epic estimate fallback to the overall ticket total.
+  const ticketMap=new Map();
+  rows.forEach(e=>piPlannedTickets(e).forEach(t=>{
+    if(fTeam!=="All"&&ticketTeamOf(t)!==fTeam)return;
+    const key=String(t.key||`${e.key||"epic"}:${ticketMap.size}`);
+    if(!ticketMap.has(key))ticketMap.set(key,t);
+  }));
+  const scopeTickets=[...ticketMap.values()];
+  const total=scopeTickets.reduce((sum,t)=>sum+(+(t.sp||0)),0);
+  const closed=scopeTickets.filter(t=>completedSpStatus(t.status)).reduce((sum,t)=>sum+(+(t.sp||0)),0);
+  const pct=total>0?100*closed/total:0;
+  const pending=rows.filter(piProgressClosurePending).length;
+  const doneEpics=rows.filter(e=>epicStatusClosed(e)&&piEpicDone(e)).length;
+  const parentGroups=groupByParent(rows);
+  const doneParents=parentGroups.filter(g=>g.epics.length>0&&g.epics.every(e=>epicStatusClosed(e)&&piEpicDone(e))).length;
+  const resultLabel=resultType==="parent"?"Done Parent Links / Total":"Done Epics / Total Epics";
+  const resultValue=resultType==="parent"?`${doneParents}/${parentGroups.length}`:`${doneEpics}/${rows.length}`;
+  const resultHelp=resultType==="parent"?"All included Epics are done":"Epic and all PI tickets are Closed";
+  el.innerHTML=`<div class="card kpi"><div class="l">Overall progress</div><div class="v o">${pc(pct)}</div><div class="s" style="margin-top:8px">${bar(pct,"100%",8)}</div></div><div class="card kpi"><div class="l">Total PI ticket SP</div><div class="v">${f1(total)}</div><div class="s">All tickets planned in this PI</div></div><div class="card kpi"><div class="l">Closed PI ticket SP</div><div class="v g">${f1(closed)}</div><div class="s">Closed + Verified status</div></div><div class="card kpi"><div class="l">Remaining ticket SP</div><div class="v">${f1(Math.max(0,total-closed))}</div><div class="s">Total minus Closed SP</div></div><div class="card kpi"><div class="l">${resultLabel}</div><div class="v p">${resultValue}</div><div class="s">${resultHelp}</div></div><div class="card kpi"><div class="l">Closure pending</div><div class="v" style="color:${pending?'#c8821f':'var(--adj)'}">${pending}</div><div class="s">99% until Epic is Closed</div></div><div class="card kpi"><div class="l">Current scope</div><div class="v" style="font-size:18px">${escHtml(scopeLabel)}</div><div class="s">Summary follows active filters</div></div>`;
+}
+
+/* ---------- Parent Link progress (per selected team or global) ---------- */
+function parentTimeline(epics){const active=new Set();(epics||[]).forEach(e=>{const tl=actualTimeline(e);if(tl)(tl.active||[]).forEach(i=>active.add(i));});if(!active.size)return null;const arr=[...active].sort((a,b)=>a-b);return {start:arr[0],end:arr[arr.length-1],active:arr};}
+function renderParentLinks(){
+  chips("parentProduct",PRODUCT_OPTIONS,fProduct,v=>{fProduct=v;progressParent="all";renderParentLinks();});
+  chips("parentSort",[["name","Parent Link"],["gantt","By Gantt"],["pct","By progress"],["sp","By PI planned SP"]],parentGanttSort,v=>{parentGanttSort=v;renderParentLinks();});
+  const epics=productFiltered(filteredEpics());
+  renderProgressOverall("parentOverallKpis",epics,`${fTeam==="All"?"All teams":fTeam} · ${productLabel(fProduct)}`,"parent");
+  document.getElementById("plSub").textContent=`${productLabel(fProduct)} · ${fTeam==="All"?"all teams":fTeam}. All SP and progress values on this tab use only tickets planned in PI ${META.piName||""}.`;
+  const map={};
+  epics.forEach(e=>{const key=plKey(e),g=map[key]||(map[key]={key,name:plName(e),epics:[],teams:new Set(),total:0,done:0,doneCount:0});g.epics.push(e);g.teams.add(teamOf(e));g.total+=piProgressTotalSp(e);g.done+=piProgressClosedSp(e);g.weightedDone=(g.weightedDone||0)+piProgressWeightedDone(e);if(epicStatusClosed(e)&&piEpicDone(e))g.doneCount++;});
+  let rows=Object.values(map).map(group=>({group,tl:parentTimeline(group.epics)}));
+  rows.sort((a,b)=>{
+    if(parentGanttSort==="gantt"){
+      // Earlier start first. When two Parent Links start in the same sprint,
+      // shorter timelines come first. Items without movement are shown last.
+      const sa=a.tl?a.tl.start:Infinity,sb=b.tl?b.tl.start:Infinity;
+      if(sa!==sb)return sa-sb;
+      const da=a.tl?(a.tl.end-a.tl.start+1):Infinity,db=b.tl?(b.tl.end-b.tl.start+1):Infinity;
+      if(da!==db)return da-db;
+      const ea=a.tl?a.tl.end:Infinity,eb=b.tl?b.tl.end:Infinity;
+      if(ea!==eb)return ea-eb;
+    }else if(parentGanttSort==="pct"){
+      const pa=a.group.total?100*a.group.done/a.group.total:0,pb=b.group.total?100*b.group.done/b.group.total:0;
+      if(pa!==pb)return pb-pa;
+    }else if(parentGanttSort==="sp"&&a.group.total!==b.group.total)return b.group.total-a.group.total;
+    return String(a.group.key||"").localeCompare(String(b.group.key||""));
+  });
+  const sprintHead=Array.from({length:NS},(_,i)=>`<th style="text-align:center;min-width:48px;padding:8px 2px">${sprintLabel(i)}</th>`).join(""),sprintCols=Array.from({length:NS},()=>`<col style="width:50px">`).join("");
+  let html=`<colgroup><col style="width:30px"><col style="width:175px"><col style="width:112px"><col style="width:55px"><col style="width:78px"><col style="width:78px"><col style="width:82px">${sprintCols}</colgroup><thead><tr><th></th><th>Parent Link</th><th>Teams</th><th>Epics</th><th>PI planned SP</th><th>PI Closed SP</th><th>Progress</th>${sprintHead}</tr></thead><tbody>`;
+  if(!rows.length)html+=`<tr><td colspan="${7+NS}" style="color:#888">No Parent Links found for the current filters.</td></tr>`;
+  rows.forEach(({group:g,tl},idx)=>{const pct=g.total?100*(g.weightedDone||0)/g.total:0,rid=`pldet_${idx}`;html+=`<tr><td><button class="ghostbtn" style="padding:3px 7px" data-pl-toggle="${rid}">+</button></td><td class="name">${plLabelHtml(g.key,g.name,"168px")}</td><td>${teamPillsWrap(g.teams)}</td><td>${g.doneCount}/${g.epics.length}</td><td>${f1(g.total)}</td><td style="color:var(--adj);font-weight:800">${f1(g.done)}</td><td>${pc(pct)} ${bar(pct,34,7)}</td>${barCells(tl)}</tr>`;
+    const detail=g.epics.slice().sort((x,y)=>String(x.key||"").localeCompare(String(y.key||""))).map(e=>{const planned=piProgressTotalSp(e),closed=piProgressClosedSp(e),p=piProgressPct(e),sprints=[...new Set(piPlannedTickets(e).flatMap(t=>(t.sprints||[]).filter(sprintBelongsToSelectedPi)))].sort();return `<tr><td>${issueLink(e.key,"90px")}</td><td>${teamPill(teamOf(e),"124px")}</td><td>${escHtml(e.status||"")}</td><td>${f1(planned)}</td><td>${f1(closed)}</td><td>${pc(p)}</td><td>${escHtml(sprints.join(', ')||'—')}</td><td style="text-align:left">${escHtml(e.summary||"")}</td></tr>`;}).join("");
+    html+=`<tr id="${rid}" style="display:none;background:var(--bg)"><td colspan="${7+NS}"><table class="dt"><thead><tr><th>Epic</th><th>Team</th><th>Status</th><th>PI planned SP</th><th>PI Closed SP</th><th>Progress</th><th>PI sprint(s)</th><th>Summary</th></tr></thead><tbody>${detail}</tbody></table></td></tr>`;
+  });html+=`</tbody>`;
+  const table=document.getElementById("parentLinkTable");table.style.minWidth=`${610+NS*50}px`;table.innerHTML=html;
+  document.getElementById("parentLegend").innerHTML=`<span><i style="background:var(--adj)"></i>Selected-PI Jira sprint movement</span><span style="color:var(--faint)">Progress is Closed selected-PI ticket SP divided by total selected-PI ticket SP; 100% is shown as 99% while the Epic remains open.</span>`;
+  const buttons=[...document.querySelectorAll("[data-pl-toggle]")],allOpen=()=>buttons.length&&buttons.every(b=>document.getElementById(b.dataset.plToggle).style.display!=="none"),refresh=()=>document.getElementById("toggleAllParentLinks").textContent=allOpen()?"Hide all":"Expand all",set=(b,o)=>{const r=document.getElementById(b.dataset.plToggle);r.style.display=o?"table-row":"none";b.textContent=o?"−":"+";};buttons.forEach(b=>b.onclick=()=>{set(b,document.getElementById(b.dataset.plToggle).style.display==="none");refresh();});document.getElementById("toggleAllParentLinks").onclick=()=>{const o=!allOpen();buttons.forEach(b=>set(b,o));refresh();};refresh();
+}
+
+/* ---------- Teams tab ---------- */
+function renderTeams(){
+  if(kanbanTeam!=="All"&&!TEAMS.includes(kanbanTeam))kanbanTeam="All";
+  chips("kanbanTeam",[["All","All teams"],...TEAMS.map(t=>[t,t])],kanbanTeam,v=>{kanbanTeam=v;renderTeams();});
+  chips("kanbanProduct",PRODUCT_OPTIONS,kanbanProduct,v=>{kanbanProduct=v;kanbanParent="all";renderTeams();});
+  let epics=EPICS.filter(e=>kanbanProduct==="all"||productOf(e)===kanbanProduct);
+  const parents=groupByParent(epics),parentOptions=[["all","All Parent Links"],...parents.map(g=>[g.key,g.name||g.key])];
+  if(!parentOptions.some(x=>x[0]===kanbanParent))kanbanParent="all";
+  chips("kanbanParent",parentOptions.slice(0,16),kanbanParent,v=>{kanbanParent=v;renderTeams();});
+  if(kanbanParent!=="all")epics=epics.filter(e=>plKey(e)===kanbanParent);
+  const sprintOptions=[["all","All PI"],...Array.from({length:NS},(_,i)=>[sprintLabel(i),sprintLabel(i)])];
+  if(!sprintOptions.some(x=>x[0]===kanbanSprint))kanbanSprint="all";
+  chips("kanbanSprint",sprintOptions,kanbanSprint,v=>{kanbanSprint=v;renderTeams();});
+  const epicByKey=Object.fromEntries(EPICS.map(e=>[String(e.key||""),e]));
+  const allowedEpicKeys=new Set(epics.map(e=>String(e.key||"")));
+  const rawTickets=TEAM_SOURCE_TICKETS;
+  const tickets=[];
+  rawTickets.forEach(t=>{
+    const epic=epicByKey[String(t.epicKey||"")]||null;
+    const derivedTeam=ticketTeamOf(t);
+    if(kanbanTeam!=="All"&&derivedTeam!==kanbanTeam)return;
+    if(epic&&kanbanProduct!=="all"&&productOf(epic)!==kanbanProduct)return;
+    if(kanbanParent!=="all"&&(!epic||plKey(epic)!==kanbanParent))return;
+    const piSprints=ticketPiSprints(t);
+    // All PI means all tickets explicitly planned in a sprint of the selected PI,
+    // not every historical/unplanned ticket belonging to an in-scope Epic.
+    if(!piSprints.length)return;
+    if(kanbanSprint!=="all"&&!piSprints.includes(kanbanSprint))return;
+    // When a product/Parent Link filter is active, tickets without a resolvable Epic cannot match it.
+    if((kanbanProduct!=="all"||kanbanParent!=="all")&&!epic)return;
+    tickets.push({ticket:t,epic:epic||{key:t.epicKey||"No Epic",parentLink:"No parent link",parentLinkName:"No parent link"},team:derivedTeam,piSprints});
+  });
+  // The Teams view intentionally mirrors the four visible workflow columns of
+  // the Jira board shown by the user. Never create one fallback column per status.
+  const sourceColumns=(META.boardColumns||[]).map(c=>({...c,statusIds:(c.statusIds||[]).map(String)}));
+  const columns=[
+    {id:"todo",name:"TO DO",statusIds:[],doneColumn:false},
+    {id:"progress",name:"IN PROGRESS",statusIds:[],doneColumn:false},
+    {id:"review",name:"(FOR) REVIEW - ANALYSIS",statusIds:[],doneColumn:false},
+    {id:"done",name:"DONE",statusIds:[],doneColumn:true},
+  ];
+  const normalColumnName=v=>String(v||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  sourceColumns.forEach(c=>{
+    const n=normalColumnName(c.name);
+    let target=null;
+    if(n.includes("analysis"))target=columns[1];
+    else if(n.includes("review"))target=columns[2];
+    else if(n.includes("progress")||n.includes("doing")||n.includes("development"))target=columns[1];
+    else if(c.doneColumn||n==="done"||n.includes("complete")||n.includes("closed"))target=columns[3];
+    else if(n.includes("to do")||n.includes("todo")||n.includes("backlog")||n.includes("open"))target=columns[0];
+    if(target)c.statusIds.forEach(id=>{if(!target.statusIds.includes(id))target.statusIds.push(id);});
+  });
+  const columnFor=x=>{
+    const statusId=String(x.ticket.statusId||""),status=normalColumnName(x.ticket.status);
+    // Explicit workflow rule: Resolved belongs in review, not Done, even when
+    // Jira's board configuration maps the Resolved status to the final column.
+    if(status==="resolved"||status.includes("resolved"))return columns[2];
+    // Only the literal Closed status is forced into DONE by portfolio rules.
+    if(completedSpStatus(x.ticket.status))return columns[3];
+    const mapped=columns.find(c=>c.statusIds.includes(statusId));
+    if(mapped)return mapped;
+    if(status.includes("analysis"))return columns[1];
+    if(status.includes("review")||status.includes("validation")||status.includes("verify"))return columns[2];
+    if(status==="done"||status.includes("complete")||status.includes("closed"))return columns[3];
+    if(status.includes("progress")||status.includes("implement")||status.includes("develop"))return columns[1];
+    return columns[0];
+  };
+  const scopeLabel=kanbanSprint==="all"?`PI ${escHtml(META.piName||"")}`:escHtml(kanbanSprint);
+  const byTeam={};
+  if(kanbanSprint==="all"){
+    // All PI keeps the cross-team remaining-Epic-SP allocation used by Overview.
+    EPICS.forEach(e=>{
+      const allocation=epicSpByTicketTeam(e),piTickets=piPlannedTickets(e),teams=new Set([...Object.keys(allocation.planned),...Object.keys(allocation.closed)]);
+      teams.forEach(team=>{
+        const g=byTeam[team]||(byTeam[team]={team,planned:0,closed:0,tickets:0,closedCount:0,epics:new Set(),doneEpics:new Set(),parents:new Set()});
+        g.planned+=allocation.planned[team]||0;g.closed+=allocation.closed[team]||0;g.epics.add(e.key);g.parents.add(plKey(e));if(piEpicDone(e))g.doneEpics.add(e.key);
+        g.tickets+=piTickets.filter(t=>ticketTeamOf(t)===team).length;
+        g.closedCount+=piTickets.filter(t=>ticketTeamOf(t)===team&&completedSpStatus(t.status)).length;
+      });
+    });
+  }else{
+    // A selected sprint is ticket-level: use only tickets planned in that active
+    // sprint, with each ticket's own Team, SP and Closed status.
+    tickets.forEach(x=>{
+      const team=x.team,g=byTeam[team]||(byTeam[team]={team,planned:0,closed:0,tickets:0,closedCount:0,epics:new Set(),doneEpics:new Set(),parents:new Set()});
+      const sp=+(x.ticket.sp||0);
+      g.planned+=sp;g.tickets++;g.epics.add(x.epic.key);g.parents.add(plKey(x.epic));
+      if(completedSpStatus(x.ticket.status)){g.closed+=sp;g.closedCount++;}
+    });
+  }
+  const planned=Object.values(byTeam).reduce((a,g)=>a+g.planned,0),closedSp=Object.values(byTeam).reduce((a,g)=>a+g.closed,0);
+  let sum=`<thead><tr><th>Team</th><th>${scopeLabel} planned SP</th><th>Closed SP</th><th>Progress</th><th>Tickets</th><th>Closed</th><th>Epics</th><th>Parent Links</th></tr></thead><tbody>`;Object.values(byTeam).filter(g=>g.planned>0).sort((a,b)=>b.planned-a.planned).forEach(g=>{const pct=g.planned?100*g.closed/g.planned:0;sum+=`<tr><td>${teamPill(g.team)}</td><td>${f1(g.planned)}</td><td style="color:var(--adj);font-weight:800">${f1(g.closed)}</td><td>${pc(pct)} ${bar(pct,70,7)}</td><td>${g.tickets}</td><td>${g.closedCount}</td><td>${g.epics.size}</td><td>${g.parents.size}</td></tr>`});if(!Object.values(byTeam).some(g=>g.planned>0))sum+=`<tr><td colspan="8" style="color:var(--faint)">No PI scope found.</td></tr>`;sum+=`</tbody>`;document.getElementById("kanbanSummary").innerHTML=sum;
+  const initials=n=>String(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'—';
+  const card=x=>`<article class="kb-card"><div style="display:flex;align-items:center;gap:8px">${issueLink(x.ticket.key,"115px")}${x.ticket.assignee?`<span class="kb-avatar" title="${escHtml(x.ticket.assignee)}">${escHtml(initials(x.ticket.assignee))}</span>`:''}</div><div class="sum">${escHtml(x.ticket.summary||'(no summary)')}</div><div class="kb-meta"><span class="kb-chip">${escHtml(x.team)}</span><span class="kb-chip">${escHtml(x.epic.key||'')}</span><span class="kb-chip">${escHtml(productLabel(productOf(x.epic)))}</span><span class="kb-chip">${f1(x.ticket.sp||0)} SP</span><span class="kb-chip">${escHtml(x.piSprints.join(', ')||'—')}</span><span class="kb-chip">${escHtml(x.ticket.status||'—')}</span></div></article>`;
+  document.getElementById("teamKanban").innerHTML=columns.map((c,i)=>{const rows=tickets.filter(x=>columnFor(x)===c),color=c.doneColumn?'var(--adj)':i===0?'var(--theo)':i===1?'var(--real)':'var(--accent)';return `<section class="kb-col"><div class="kb-head" style="border-top:4px solid ${color}"><span>${escHtml(c.name)}</span><span>${rows.length}</span></div><div class="kb-list">${rows.length?rows.map(card).join(''):'<div class="subtle">No tickets</div>'}</div></section>`;}).join('');
+  document.getElementById("kanbanLegend").innerHTML=`<span><i style="background:var(--adj)"></i>${tickets.filter(x=>exactClosedStatus(x.ticket.status)).length} Closed + Verified</span><span style="color:var(--faint)">${scopeLabel}: ${f1(closedSp)} / ${f1(planned)} SP closed · ${planned?pc(100*closedSp/planned):'0%'} · ${BOARD_TICKETS.length+' board + '+EPIC_CHILD_TICKETS.length+' Epic-child tickets merged; '+PI_TEAM_TICKETS.length+' tickets planned in PI '+escHtml(META.piName||'')} · Fixed four-column Jira workflow. Team comes from the ticket's Jira Team field; Epic Team is fallback only.</span>`;
+}
+
+/* ---------- Epic progress ---------- */
+function sprintIndexFromCode(code){
+  const m=String(code||"").match(/(\d{2}\.\d+)\.(\d+)/);
+  if(!m)return null;
+  if(String(META.piName||"").replace(/^PI\s*/,"")!==m[1])return null;
+  const idx=parseInt(m[2],10)-1;
+  return Number.isFinite(idx)&&idx>=0&&idx<NS?idx:null;
+}
+function actualTimeline(e){
+  const active=new Set();
+  (e.tickets||[]).forEach(t=>{(t.sprints||[]).forEach(code=>{const i=sprintIndexFromCode(code);if(i!==null)active.add(i);});});
+  if(!active.size)return null;
+  const arr=[...active].sort((a,b)=>a-b);
+  return {start:arr[0],end:arr[arr.length-1],active:arr};
+}
+function sprintLabel(i){return `${String(META.piName||"").replace(/^PI\s*/,"")}.${i+1}`;}
+function barCells(tl){
+  if(!tl)return Array.from({length:NS},()=>`<td style="height:24px;background:var(--bg);padding:0"></td>`).join("");
+  const active=new Set(tl.active||[]);
+  return Array.from({length:NS},(_,i)=>{
+    const inRange=i>=tl.start&&i<=tl.end;
+    const isActive=active.has(i);
+    const op=inRange?(isActive?0.86:0.22):0;
+    const radius=i===tl.start&&i===tl.end?"999px":i===tl.start?"999px 0 0 999px":i===tl.end?"0 999px 999px 0":"0";
+    return `<td style="height:24px;background:var(--bg);text-align:center;padding:0"><div title="${sprintLabel(i)}${inRange&&!isActive?" (gap / no movement detected)":""}" style="height:14px;width:100%;margin:5px 0;border-radius:${radius};background:var(--adj);opacity:${op}"></div></td>`;
+  }).join("");
+}
+function renderProgress(){
+  chips("progressProduct",PRODUCT_OPTIONS,fProduct,v=>{fProduct=v;progressParent="all";renderProgress();});
+  const epics=productFiltered(filteredEpics());
+  const parents=groupByParent(epics);
+  const parentOptions=[["all","All"],...parents.map(g=>[g.key,g.name&&g.name!==g.key?g.name:g.key])];
+  if(!parentOptions.some(x=>x[0]===progressParent))progressParent="all";
+  chips("progressParent",parentOptions.slice(0,14),progressParent,v=>{progressParent=v;renderProgress();});
+  const baseRows=epics.filter(e=>progressParent==="all"||plKey(e)===progressParent).map(e=>({e,tl:actualTimeline(e)}));
+  const selectedParent=progressParent==="all"?"All Parent Links":(parents.find(g=>g.key===progressParent)?.name||progressParent);
+  renderProgressOverall("progressOverallKpis",baseRows.map(r=>r.e),`${fTeam==="All"?"All teams":fTeam} · ${productLabel(fProduct)} · ${selectedParent}`,"epic");
+  chips("progressSort",[["epic","Epic key"],["gantt","By Gantt"],["pct","By progress"]],progressSort,v=>{progressSort=v;renderProgress();});
+  function rowCompare(a,b){
+    if(progressSort==="gantt"){const sa=a.tl?a.tl.start:Infinity,sb=b.tl?b.tl.start:Infinity;if(sa!==sb)return sa-sb;const da=a.tl?a.tl.end-a.tl.start:Infinity,db=b.tl?b.tl.end-b.tl.start:Infinity;if(da!==db)return da-db;}
+    else if(progressSort==="pct"){const pa=piProgressPct(a.e),pb=piProgressPct(b.e);if(pa!==pb)return pb-pa;}
+    return String(a.e.key||"").localeCompare(String(b.e.key||""));
+  }
+  const rows=baseRows.sort(rowCompare),withMovement=baseRows.filter(r=>r.tl).length;
+  const head=Array.from({length:NS},(_,i)=>`<th style="text-align:center;min-width:52px">${sprintLabel(i)}</th>`).join("");
+  const colgroup=`<colgroup><col style="width:38px"><col style="width:110px"><col style="width:130px"><col style="width:230px"><col style="width:120px">${Array.from({length:NS},()=>`<col style="width:54px">`).join("")}</colgroup>`;
+  const doneBadge=e=>epicDone(e)?`<span title="Epic and all tickets are Closed" style="display:inline-flex;align-items:center;justify-content:center;height:18px;padding:0 7px;border-radius:999px;background:var(--adj-soft);color:var(--adj);font-weight:900;font-size:11px;margin-left:4px">done</span>`:closurePendingBadge(e);
+  let html=`<table class="dt progress-table" style="width:100%;min-width:${538+NS*54}px;table-layout:fixed">${colgroup}<thead><tr><th></th><th>Epic</th><th>Team</th><th>Summary</th><th>Progress</th>${head}</tr></thead><tbody>`;
+  if(!rows.length)html+=`<tr><td colspan="${5+NS}" style="color:#888">No Epics match the selected filters.</td></tr>`;
+  rows.forEach(({e,tl},idx)=>{
+    const planned=piProgressTotalSp(e),closed=piProgressClosedSp(e),pct=piProgressPct(e),detailId=`progressTickets_${idx}`;
+    const tickets=(e.tickets||[]).slice().sort((a,b)=>{const api=(a.sprints||[]).some(sprintBelongsToSelectedPi),bpi=(b.sprints||[]).some(sprintBelongsToSelectedPi);return api!==bpi?(api?-1:1):String(a.key||"").localeCompare(String(b.key||""));});
+    html+=`<tr><td><button class="ghostbtn" style="padding:3px 7px" data-progress-toggle="${detailId}" ${tickets.length?'':'disabled'}>${tickets.length?'+':'—'}</button></td><td>${issueLink(e.key,"100px")}${doneBadge(e)}</td><td>${teamPill(teamOf(e),"122px")}</td><td title="${escHtml(e.summary||'')}">${escHtml(e.summary||'')}</td><td><div style="display:flex;align-items:center;gap:6px;justify-content:center"><b>${pc(pct)}</b>${bar(pct,64,8)}<span style="font-size:10px;color:var(--faint)">${f1(closed)}/${f1(planned)} SP</span></div></td>${barCells(tl)}</tr>`;
+    if(tickets.length){
+      const ticketRows=tickets.map(t=>{const inPi=(t.sprints||[]).some(sprintBelongsToSelectedPi),piCodes=(t.sprints||[]).filter(sprintBelongsToSelectedPi),allCodes=t.sprints||[];return `<tr style="opacity:${inPi?1:0.35}"><td>${issueLink(t.key,"105px")}</td><td>${teamPill(ticketTeamOf(t),"135px")}</td><td>${escHtml(t.issueType||'—')}</td><td>${escHtml(t.status||'—')}</td><td>${f1(t.sp||0)}</td><td>${escHtml((inPi?piCodes:allCodes).join(', ')||'—')}</td><td>${inPi?'In PI':'Outside PI'}</td><td>${escHtml(t.summary||'')}</td></tr>`;}).join('');
+      html+=`<tr id="${detailId}" style="display:none;background:var(--bg)"><td colspan="${5+NS}"><table class="dt"><thead><tr><th>Ticket</th><th>Team</th><th>Type</th><th>Status</th><th>SP</th><th>Sprint(s)</th><th>PI planning</th><th>Summary</th></tr></thead><tbody>${ticketRows}</tbody></table></td></tr>`;
+    }
+  });
+  html+=`</tbody></table>`;document.getElementById("epicProgressGantt").innerHTML=html;
+  const buttons=[...document.querySelectorAll("[data-progress-toggle]")].filter(b=>!b.disabled),barEl=document.getElementById("progressToggleBar"),all=document.getElementById("toggleAllProgressTickets");
+  const isOpen=b=>{const r=document.getElementById(b.dataset.progressToggle);return r&&r.style.display!=="none";},allOpen=()=>buttons.length&&buttons.every(isOpen),set=(b,o)=>{const r=document.getElementById(b.dataset.progressToggle);if(r){r.style.display=o?"table-row":"none";b.textContent=o?"−":"+";}},refresh=()=>{if(barEl)barEl.style.display=buttons.length?"flex":"none";if(all)all.textContent=allOpen()?"Hide all":"Expand all";};
+  buttons.forEach(b=>b.onclick=()=>{set(b,!isOpen(b));refresh();});if(all)all.onclick=()=>{const o=!allOpen();buttons.forEach(b=>set(b,o));refresh();};refresh();
+  const scope=`${productLabel(fProduct)} · ${fTeam==="All"?"all teams":fTeam}`;
+  document.getElementById("progressLegend").innerHTML=`<span><i style="background:var(--adj)"></i>Actual Jira sprint movement</span><span style="color:var(--faint)">Scope: ${escHtml(scope)}. Progress is Closed selected-PI ticket SP divided by total selected-PI ticket SP; Epic estimate is fallback only when no ticket SP exists. Expand an Epic to inspect all child tickets; tickets outside PI ${escHtml(META.piName||'')} planning are shown with low opacity.</span>`;
+}
+
+function renderPiPortfolioDetail(){
+  const epics=filteredEpics(),groups=groupByParent(epics),fullSp=epics.reduce((a,e)=>a+epicTotal(e),0),closedSp=epics.reduce((a,e)=>a+epicDoneSp(e),0);
+  document.getElementById("portfolioKpis").innerHTML=`<div class="card kpi"><div class="l">Full Epic SP</div><div class="v">${f1(fullSp)}</div><div class="s">${epics.length} Epics involved in PI ${escHtml(META.piName||"")}</div></div><div class="card kpi"><div class="l">All Closed-ticket SP</div><div class="v g">${f1(closedSp)}</div></div><div class="card kpi"><div class="l">Full-scope progress</div><div class="v">${pc(fullSp?100*closedSp/fullSp:0)}</div><div class="s">Includes ticket history outside the PI</div></div>`;
+  const teams={};epics.forEach(e=>{const t=teamOf(e),g=teams[t]||(teams[t]={team:t,full:0,closed:0,piPlanned:0,piClosed:0,epics:0,parents:new Set(),tickets:0});g.full+=epicTotal(e);g.closed+=epicDoneSp(e);g.piPlanned+=piPlannedSp(e);g.piClosed+=piClosedSp(e);g.epics++;g.parents.add(plKey(e));g.tickets+=(e.tickets||[]).length;});
+  let th=`<thead><tr><th>Team</th><th>Full Epic SP</th><th>All Closed SP</th><th>Full progress</th><th>PI planned SP</th><th>PI Closed SP</th><th>Epics</th><th>Tickets</th><th>Parent Links</th></tr></thead><tbody>`;Object.values(teams).sort((a,b)=>b.full-a.full).forEach(g=>{const p=g.full?100*g.closed/g.full:0;th+=`<tr><td>${teamPill(g.team)}</td><td>${f1(g.full)}</td><td>${f1(g.closed)}</td><td>${pc(p)} ${bar(p,65,7)}</td><td>${f1(g.piPlanned)}</td><td>${f1(g.piClosed)}</td><td>${g.epics}</td><td>${g.tickets}</td><td>${g.parents.size}</td></tr>`;});th+=`</tbody>`;document.getElementById("portfolioTeams").innerHTML=th;
+  let ph=`<thead><tr><th></th><th>Parent Link</th><th>Teams</th><th>Epics</th><th>Full Epic SP</th><th>All Closed SP</th><th>Full progress</th></tr></thead><tbody>`;
+  groups.forEach((g,i)=>{const id=`pf_${i}`,p=g.total?100*g.done/g.total:0;ph+=`<tr><td><button class="ghostbtn" data-pf="${id}">+</button></td><td>${plLabelHtml(g.key,g.name,"400px")}</td><td>${teamPillsWrap(g.teams)}</td><td>${g.count}</td><td>${f1(g.total)}</td><td>${f1(g.done)}</td><td>${pc(p)}</td></tr>`;
+    const er=g.epics.map((e,j)=>{const tid=`pft_${i}_${j}`,tickets=(e.tickets||[]),allClosed=tickets.filter(t=>exactClosedStatus(t.status)).reduce((a,t)=>a+(+t.sp||0),0);return `<tr><td><button class="ghostbtn" data-pft="${tid}">+</button></td><td>${issueLink(e.key,"95px")}</td><td>${escHtml(e.ppi||META.piName||"")}</td><td>${teamPill(teamOf(e))}</td><td>${escHtml(e.status||"")}</td><td>${f1(e.sp||0)}</td><td>${f1(epicTotal(e))}</td><td>${f1(allClosed)}</td><td>${tickets.length}</td><td>${escHtml(e.discipline||'—')}</td><td style="text-align:left">${escHtml(e.summary||"")}</td></tr><tr id="${tid}" style="display:none"><td colspan="11"><table class="dt"><thead><tr><th>Ticket</th><th>Type</th><th>Status</th><th>SP</th><th>Done SP</th><th>Category</th><th>Sprint(s)</th><th>Summary</th></tr></thead><tbody>${tickets.map(t=>`<tr><td>${issueLink(t.key,"95px")}</td><td>${escHtml(t.issueType||'')}</td><td>${escHtml(t.status||'')}</td><td>${f1(t.sp||0)}</td><td>${f1(t.doneSp||0)}</td><td>${escHtml(t.discipline||'—')}</td><td>${escHtml((t.sprints||[]).join(', ')||'—')}</td><td style="text-align:left">${escHtml(t.summary||'')}</td></tr>`).join('')}</tbody></table></td></tr>`;}).join('');
+    ph+=`<tr id="${id}" style="display:none"><td colspan="7"><table class="dt"><thead><tr><th></th><th>Epic</th><th>Planned PI</th><th>Team</th><th>Status</th><th>Epic SP</th><th>Total SP</th><th>All Closed SP</th><th>Tickets</th><th>Category</th><th>Summary</th></tr></thead><tbody>${er}</tbody></table></td></tr>`;
+  });ph+=`</tbody>`;document.getElementById("portfolioParents").innerHTML=ph;
+  const eb=[...document.querySelectorAll('[data-pf]')],tb=[...document.querySelectorAll('[data-pft]')],set=(b,key,o)=>{const r=document.getElementById(b.dataset[key]);r.style.display=o?'table-row':'none';b.textContent=o?'−':'+';};eb.forEach(b=>b.onclick=()=>set(b,'pf',document.getElementById(b.dataset.pf).style.display==='none'));tb.forEach(b=>b.onclick=()=>set(b,'pft',document.getElementById(b.dataset.pft).style.display==='none'));const all=document.getElementById('portfolioExpandAll');const allOpen=()=>eb.length&&eb.every(b=>document.getElementById(b.dataset.pf).style.display!=='none');const refresh=()=>all.textContent=allOpen()?'Hide all':'Expand all';all.onclick=()=>{const o=!allOpen();eb.forEach(b=>set(b,'pf',o));refresh();};refresh();
+}
+
+/* ---------- Sprint predictability ---------- */
+function formatClosedDate(value){
+  if(!value)return "—";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return escHtml(String(value));
+  return new Intl.DateTimeFormat(undefined,{
+    year:"numeric",
+    month:"short",
+    day:"2-digit",
+    hour:"2-digit",
+    minute:"2-digit",
+    hour12:false
+  }).format(date);
+}
+function renderPredictability(){
+  const source=(PREDICTABILITY.rows||[]).map(r=>({...r}));
+  const teams=[...new Set(source.map(r=>r.team).filter(Boolean))].sort();
+  const sprintNames=[...new Set(source.map(r=>r.sprint).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  predTeam="All";
+  if(predGroup!=="sprint"&&predGroup!=="team")predGroup="sprint";
+  chips("predGroup",[["sprint","Sprint"],["team","Team"]],predGroup,v=>{predGroup=v;renderPredictability();});
+  document.getElementById("predTeam").innerHTML=`<span class="chip active">All teams (${teams.length})</span>`;
+  document.getElementById("predProduct").innerHTML=sprintNames.length?`<span class="subtle">${escHtml(sprintNames.join(" · "))}</span>`:"";
+  const filtered=source;
+  const groups={};filtered.forEach(r=>{const key=predGroup==="team"?r.team:r.sprint;const g=groups[key]||(groups[key]={name:key,final:0,completed:0});g.final+=+(r.finalCommitment||0);g.completed+=+(r.completedWork||0);});
+  const rows=Object.values(groups).sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
+  const finalTotal=filtered.reduce((a,r)=>a+(+r.finalCommitment||0),0),completedTotal=filtered.reduce((a,r)=>a+(+r.completedWork||0),0),pct=finalTotal?100*completedTotal/finalTotal:0;
+  document.getElementById("predKpis").innerHTML=`<div class="card kpi"><div class="l">Final commitment</div><div class="v">${f1(finalTotal)}</div><div class="s">Selected sprint rows</div></div><div class="card kpi"><div class="l">Completed work</div><div class="v g">${f1(completedTotal)}</div><div class="s">Jira velocity data</div></div><div class="card kpi"><div class="l">Predictability</div><div class="v o">${pc(pct)}</div><div class="s">Completed / final commitment</div></div><div class="card kpi"><div class="l">Rows</div><div class="v">${filtered.length}</div><div class="s">Team and sprint combinations</div></div>`;
+  const donut=Math.max(0,Math.min(100,pct));document.getElementById("predDonut").innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:290px"><div style="width:230px;height:230px;border-radius:50%;background:conic-gradient(var(--real) 0 ${donut}%,var(--line) ${donut}% 100%);display:grid;place-items:center"><div style="width:145px;height:145px;border-radius:50%;background:var(--card);display:grid;place-items:center;text-align:center"><div><div style="font:800 38px var(--disp);color:var(--ink)">${pc(pct)}</div><div class="subtle">completed / final</div></div></div></div></div>`;
+  const max=Math.max(1,...rows.flatMap(g=>[g.final,g.completed]));document.getElementById("predBars").innerHTML=`<div style="display:grid;gap:12px;margin-top:18px">${rows.map(g=>`<div><div style="font-weight:700;margin-bottom:5px">${escHtml(g.name)}</div><div style="display:grid;grid-template-columns:105px 1fr 52px;gap:8px;align-items:center;font-size:11px"><span>Final commitment</span><div class="pbar"><i style="width:${100*g.final/max}%;background:var(--accent)"></i></div><b>${f1(g.final)}</b><span>Completed work</span><div class="pbar"><i style="width:${100*g.completed/max}%;background:var(--real)"></i></div><b>${f1(g.completed)}</b></div></div>`).join("")||'<div class="subtle">No predictability data. Check Force commitment refresh and click Sync.</div>'}</div>`;
+  let table=`<thead><tr><th>Team / board</th><th>Sprint</th><th>Final commitment</th><th>Completed work</th><th>Predictability</th><th>Closed date</th></tr></thead><tbody>`;filtered.sort((a,b)=>String(a.team).localeCompare(String(b.team))||String(a.sprint).localeCompare(String(b.sprint),undefined,{numeric:true})).forEach(r=>{const p=r.finalCommitment?100*r.completedWork/r.finalCommitment:0;table+=`<tr><td class="name">${teamPill(r.team)}</td><td>${escHtml(r.sprint)}</td><td>${f1(r.finalCommitment)}</td><td>${f1(r.completedWork)}</td><td>${pc(p)} ${bar(p,70,7)}</td><td title="${escHtml(r.closedDate||"")}">${formatClosedDate(r.closedDate)}</td></tr>`;});table+=`</tbody>`;document.getElementById("predTable").innerHTML=table;
+  const failures=(PREDICTABILITY.failures||[]);const failed=failures.length;document.getElementById("predLegend").innerHTML=`<span><i style="background:var(--accent)"></i>Final commitment</span><span><i style="background:var(--real)"></i>Completed work</span><span style="color:var(--faint)">Loaded teams: ${teams.length}/5${failed?` · Failed: ${escHtml(failures.map(f=>f.team).join(", "))}`:""}</span>`;
+}
+
+/* ---------- Data quality (refinement issues, like Capacity Planner) ---------- */
+const ticketStatusIsClosed=t=>exactClosedStatus(t&&t.status);
+/* Only these issue types are expected to carry story points and a category.
+   Anything else (Task, External Dependency, Risk, Initiative, ...) is skipped
+   for the "Missing / zero SP" and "Missing category" checks. Edit this list to
+   change which types are policed. */
+const DQ_SP_CATEGORY_TYPES=["epic","improvement","bug","story"];
+const DQ_TYPE_LABEL=DQ_SP_CATEGORY_TYPES.map(t=>t.charAt(0).toUpperCase()+t.slice(1)).join(", ");
+function dqTypeIsPoliced(t){
+  return DQ_SP_CATEGORY_TYPES.includes(String((t&&t.issueType)||"").trim().toLowerCase());
+}
+function ticketQualityIssues(t,ownerEpic){
+  const issues=[];
+  if(!t||!ownerEpic||!ownerEpic.key||ticketStatusIsClosed(t))return issues;
+  if(!dqTypeIsPoliced(t))return issues;
+  const sp=+(t.sp||0);
+  if(!(sp>0))issues.push({scope:"Ticket",kind:"Missing / zero SP",detail:`Ticket ${t.key||""} (${t.issueType||"?"}) has ${sp||0} SP.`,severity:"error",ticket:t});
+  const disc=String(t.discipline||"").trim();
+  if(!disc||disc==="Unassigned")issues.push({scope:"Ticket",kind:"Missing category",detail:`Ticket ${t.key||""} (${t.issueType||"?"}) has no discipline/category.`,severity:"error",ticket:t});
+  return issues;
+}
+function epicQualityIssues(e){
+  const issues=[];
+  if(epicDone(e))return issues;
+  if(plKey(e)==="No parent link")issues.push({scope:"Epic",kind:"Missing parent link",detail:`Epic ${e.key||""} has no Parent Link.`,severity:"error"});
+  if(teamOf(e)==="No team")issues.push({scope:"Epic",kind:"Missing team",detail:`Epic ${e.key||""} has no Team value.`,severity:"warn"});
+  if(epicClosurePending(e))issues.push({scope:"Epic",kind:"Epic closure pending",detail:`All child tickets are Closed, but Epic ${e.key||""} is not Closed.`,severity:"warn"});
+  const tickets=(e.tickets||[]);
+  if(!tickets.length)issues.push({scope:"Epic",kind:"No child tickets",detail:`Epic ${e.key||""} has no child tickets yet.`,severity:"warn"});
+  if(!(epicTotal(e)>0))issues.push({scope:"Epic",kind:"Missing / zero SP",detail:`Epic ${e.key||""} has no story points (Epic SP and child-ticket SP are both 0).`,severity:"error"});
+  const eSp=+(e.sp||0);
+  const ticketsForSp=tickets.filter(t=>t&&!ticketStatusIsClosed(t));
+  const ticketsSp=ticketsForSp.reduce((a,t)=>a+(+(t.sp||0)),0);
+  if(eSp>0&&ticketsForSp.length&&Math.abs(eSp-ticketsSp)>0.5)issues.push({scope:"Epic",kind:"Epic SP ≠ tickets SP",detail:`Epic SP is ${f1(eSp)} but tickets SP totals ${f1(ticketsSp)}.`,severity:"warn"});
+  tickets.forEach(t=>ticketQualityIssues(t,e).forEach(i=>issues.push(i)));
+  return issues;
+}
+function renderQuality(){
+  chips("qualityGroup",[["epic","Epic"],["team","Team"],["parent","Parent Link"]],qualityGroup,v=>{qualityGroup=v;renderQuality();});
+  const epics=filteredEpics();
+  const scope=fTeam==="All"?"all teams":fTeam;
+  document.getElementById("dqSub").textContent=`Refinement problems for ${scope}: missing parent link, missing/zero story points, no child tickets, Epic SP not matching tickets SP, missing team / category. Closed epics are skipped; ticket SP and category are only checked on ${DQ_TYPE_LABEL}.`;
+  const byEpic={};
+  epics.forEach(e=>{const xs=epicQualityIssues(e);if(xs.length)byEpic[e.key||""]=xs;});
+  const problemEpics=epics.filter(e=>(byEpic[e.key||""]||[]).length).sort((a,b)=>{
+    if(qualityGroup==="team"){const d=teamOf(a).localeCompare(teamOf(b));if(d)return d;}
+    if(qualityGroup==="parent"){const d=plKey(a).localeCompare(plKey(b));if(d)return d;}
+    const d=(byEpic[b.key||""]||[]).length-(byEpic[a.key||""]||[]).length;if(d)return d;
+    return String(a.key||"").localeCompare(String(b.key||""));
+  });
+  const all=problemEpics.flatMap(e=>byEpic[e.key||""]||[]);
+  const errors=all.filter(x=>x.severity==="error").length, warns=all.length-errors;
+  const expectedSp=selectedTeamScope().total;
+  const refinedTicketMap=new Map();
+  EPICS.forEach(e=>piPlannedTickets(e).forEach(t=>{
+    if(fTeam!=="All"&&ticketTeamOf(t)!==fTeam)return;
+    const key=String(t.key||`${e.key||"epic"}:${refinedTicketMap.size}`);
+    if(!refinedTicketMap.has(key))refinedTicketMap.set(key,t);
+  }));
+  const refinedSp=[...refinedTicketMap.values()].reduce((sum,t)=>sum+(+(t.sp||0)),0);
+  const refinementPct=expectedSp>0?100*refinedSp/expectedSp:0;
+  document.getElementById("dqKpis").innerHTML=`
+    <div class="card kpi"><div class="l">Refinement · ${escHtml(scope)}</div><div class="v p">${pc(refinementPct)}</div><div class="s" style="margin-top:8px">${bar(refinementPct,"100%",8)}</div></div>
+    <div class="card kpi"><div class="l">Expected SP</div><div class="v">${f1(expectedSp)}</div><div class="s">Exact same value as Overview and team table</div></div>
+    <div class="card kpi"><div class="l">Refined SP</div><div class="v g">${f1(refinedSp)}</div><div class="s">Unique selected-team PI ticket SP</div></div>
+    <div class="card kpi"><div class="l">Epics with issues · ${escHtml(scope)}</div><div class="v" style="color:${problemEpics.length?"#ef4444":"var(--adj)"}">${problemEpics.length}</div><div class="s">of ${epics.filter(e=>!epicDone(e)).length} open epic(s)</div></div>
+    <div class="card kpi"><div class="l">Total issues</div><div class="v">${all.length}</div><div class="s">to solve in refinement</div></div>
+    <div class="card kpi"><div class="l">Errors</div><div class="v" style="color:#ef4444">${errors}</div><div class="s">missing SP / parent link / category</div></div>
+    <div class="card kpi"><div class="l">Warnings</div><div class="v" style="color:#c8821f">${warns}</div><div class="s">team and SP mismatch</div></div>`;
+  let html=`<caption style="caption-side:top;text-align:left;padding:0 0 10px;color:var(--faint);font-size:12px">${all.length?`${all.length} refinement issue(s) found across ${problemEpics.length} epic(s). Expand an epic to see the exact problems.`:"No refinement issues found for the current data."}</caption>`;
+  html+=`<colgroup><col style="width:34px"><col style="width:88px"><col style="width:125px"><col style="width:105px"><col style="width:175px"><col style="width:65px"><col style="width:64px"><col style="width:70px"><col style="width:60px"><col style="width:145px"></colgroup><thead><tr><th></th><th>Epic</th><th>Team</th><th>Parent Link</th><th>Summary</th><th>Problems</th><th>Epic SP</th><th>Tickets SP</th><th>Tickets</th><th>Top issue</th></tr></thead><tbody>`;
+  if(!problemEpics.length){
+    html+=`<tr><td colspan="10" style="color:var(--adj);font-weight:700">All open epics/tickets look refined for the checks currently available${fTeam==="All"?"":` in ${escHtml(fTeam)}`}.</td></tr>`;
+  }else{
+    let previousGroup=null;
+    problemEpics.forEach((e,idx)=>{
+      const groupValue=qualityGroup==="team"?teamOf(e):qualityGroup==="parent"?`${plKey(e)} · ${plName(e)}`:"";
+      if(qualityGroup!=="epic"&&groupValue!==previousGroup){
+        html+=`<tr class="dqgroup"><td colspan="10" style="text-align:left;font-weight:800;color:var(--ink);background:var(--theo-soft);padding:9px 12px">${qualityGroup==="team"?teamPill(teamOf(e),"260px"):plLabelHtml(plKey(e),plName(e),"520px")}</td></tr>`;
+        previousGroup=groupValue;
+      }
+      const xs=byEpic[e.key||""]||[],rid=`dqdet_${idx}`;
+      const tickets=(e.tickets||[]).filter(t=>!ticketStatusIsClosed(t));
+      const ticketSum=tickets.reduce((a,t)=>a+(+(t.sp||0)),0);
+      const kinds=[...new Set(xs.map(x=>x.kind))];
+      const top=kinds.slice(0,2).join(", ")+(kinds.length>2?"…":"");
+      const worst=xs.some(x=>x.severity==="error")?"#ef4444":"#c8821f";
+      html+=`<tr><td><button class="ghostbtn" style="padding:3px 8px" data-dq-toggle="${rid}">+</button></td><td class="name">${issueLink(e.key,"none")}</td><td style="text-align:left">${teamPill(teamOf(e),"118px")}</td><td style="text-align:left">${plLabelHtml(plKey(e),plName(e),"100px")}</td><td style="text-align:left;max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(e.summary||"")}">${escHtml(e.summary||"")}</td><td style="text-align:center"><span style="font-weight:900;color:${worst}">${xs.length}</span></td><td style="text-align:right">${f1(e.sp||0)}</td><td style="text-align:right">${f1(ticketSum)}</td><td style="text-align:center">${tickets.length}</td><td style="text-align:left"><span style="color:${worst};font-weight:800">${escHtml(top||"—")}</span></td></tr>`;
+      const detailRows=xs.map(issue=>{
+        const t=issue.ticket||null;
+        const sev=issue.severity==="warn"?"#c8821f":"#ef4444";
+        return `<tr><td class="name" style="white-space:nowrap;text-align:center">${t?issueLink(t.key,"90px"):issueLink(e.key,"90px")}</td><td style="text-align:center">${escHtml(issue.scope)}</td><td style="text-align:left"><span style="color:${sev};font-weight:800">${escHtml(issue.kind)}</span></td><td style="text-align:left">${escHtml(issue.detail)}</td><td style="text-align:center">${t?f1(t.sp||0):f1(e.sp||0)}</td><td style="text-align:center">${escHtml(t?(t.status||""):(e.status||""))}</td></tr>`;
+      }).join("");
+      html+=`<tr id="${rid}" style="display:none;background:var(--bg)"><td colspan="10"><div style="padding:10px 0 6px"><div style="text-align:center;font-weight:800;margin:0 0 8px">Refinement details for ${escHtml(e.key||"")}</div><table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:110px"><col style="width:70px"><col style="width:180px"><col style="width:auto"><col style="width:64px"><col style="width:110px"></colgroup><thead><tr><th style="text-align:center">Issue key</th><th style="text-align:center">Scope</th><th style="text-align:left">Problem</th><th style="text-align:left">Detail</th><th style="text-align:center">SP</th><th style="text-align:center">Status</th></tr></thead><tbody>${detailRows}</tbody></table></div></td></tr>`;
+    });
+  }
+  html+=`</tbody>`;
+  document.getElementById("dqTable").innerHTML=html;
+  const buttons=Array.from(document.querySelectorAll("[data-dq-toggle]"));
+  const allOpen=()=>buttons.length>0&&buttons.every(btn=>{const row=document.getElementById(btn.dataset.dqToggle);return row&&row.style.display!=="none";});
+  const refreshLabel=()=>{const b=document.getElementById("toggleAllDq"),barEl=document.getElementById("dqToggleBar");if(barEl)barEl.style.display=buttons.length?"flex":"none";if(b)b.textContent=allOpen()?"Hide all":"Expand all";};
+  const setAll=open=>{buttons.forEach(btn=>{const row=document.getElementById(btn.dataset.dqToggle);if(row)row.style.display=open?"table-row":"none";btn.textContent=open?"−":"+";});refreshLabel();};
+  buttons.forEach(btn=>btn.onclick=()=>{const row=document.getElementById(btn.dataset.dqToggle),open=row&&row.style.display==="none";if(row)row.style.display=open?"table-row":"none";btn.textContent=open?"−":"+";refreshLabel();});
+  const toggle=document.getElementById("toggleAllDq");if(toggle)toggle.onclick=()=>setAll(!allOpen());
+  refreshLabel();
+}
+
+/* ---------- shell ---------- */
+function renderActive(){
+  renderKpis();
+  if(tab==="overview"){renderTeamTable();renderGlobalParentTable();}
+  else if(tab==="parentlinks")renderParentLinks();
+  else if(tab==="teams")renderTeams();
+  else if(tab==="progress")renderProgress();
+  else if(tab==="predictability")renderPredictability();
+  else if(tab==="portfolio")renderPiPortfolioDetail();
+  else if(tab==="quality")renderQuality();
+}
+function applyTheme(mode){
+  const chosen=mode==="dark"?"dark":"light";
+  document.body.dataset.theme=chosen;
+  try{localStorage.setItem("piPortfolioTheme",chosen);}catch(e){}
+  const btn=document.getElementById("themeToggle");
+  if(btn)btn.title=chosen==="dark"?"Switch to light mode":"Switch to dark mode";
+}
+function init(){
+  let saved="light";
+  try{saved=localStorage.getItem("piPortfolioTheme")||"light";}catch(e){}
+  applyTheme(saved);
+  const btn=document.getElementById("themeToggle");
+  if(btn)btn.onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");
+  const src=document.getElementById("src");
+  if(META.error){src.textContent=META.error;src.classList.add("sample");}
+  else src.textContent=`PI ${META.piName||"?"} · synced ${META.syncedAt||"?"}${SERVED?` · served ${META.servedAt||""}`:""}`;
+  document.getElementById("foot").textContent=`Kanban board ${META.kanbanBoardId||"?"} · ${EPICS.length} epic(s) · ${TEAMS.length} PI ticket team(s) · data from ${META.jiraUrl||"Jira"}. Done SP prefers customfield_15220 done/total values; closed epics always count as 100%.`;
+  document.getElementById("clearFilters").onclick=()=>{fTeam="All";fProduct="all";progressParent="all";progressSort="epic";parentGanttSort="name";qualityGroup="epic";renderTeamPills();renderActive();};
+  renderTabs();
+  renderTeamPills();
+  renderActive();
+}
+init();
+</script></body></html>
