@@ -15,6 +15,10 @@ CONFIG_EPIC_PRIORITY_FIELD = "customfield_11120"
 CONFIG_EPIC_PARENT_LINK_FIELD = "customfield_14121"
 CONFIG_EPIC_TEAM_FIELD = "customfield_14120"
 CONFIG_TICKET_SPRINT_FIELD = "customfield_11325"
+# Epic "Committed / Uncommitted" for the Planned PI. Empty means: detect it at
+# runtime by field name (see JiraClient._detect_committed_field). Set
+# JIRA_COMMITTED_FIELD to the custom field id to pin it explicitly.
+CONFIG_EPIC_COMMITTED_FIELD = os.getenv("JIRA_COMMITTED_FIELD", "")
 CONFIG_BULK_EPIC_BATCH = int(os.getenv("JIRA_DEMAND_BULK_EPIC_BATCH", "40") or "40")
 
 

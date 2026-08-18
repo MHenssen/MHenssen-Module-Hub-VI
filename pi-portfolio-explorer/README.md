@@ -84,6 +84,7 @@ Jira custom-field ids are instance-specific and live at the top of
 | `setup_ui.py` | Tkinter setup window with live sync log |
 | `templates/dashboard.html` | The dashboard itself (HTML/CSS/JS, single file) |
 
+
 ## Data flow
 
 ```
@@ -96,6 +97,45 @@ Jira REST  ->  jira_client / predictability  ->  sync  ->  pi_portfolio_data.xls
 
 The workbook is the source of truth: anyone holding it can open the dashboard
 with no Jira access at all — skip Sync and press "Serve dashboard".
+
+## Epic progress tab
+
+Beyond the shared team/product/parent-link filters, this tab has four controls
+aimed at running a PI review:
+
+- **Epic team** — filters on the Epic's *own* assigned Team field. This is
+  deliberately different from the team pills at the top of the page, which also
+  match an Epic through any of its child tickets; use those to see everything a
+  team touches, and this one to see the Epics a team actually owns.
+- **Commitment** — Committed / Uncommitted, read from the Jira field of that
+  name on the Epic (see below).
+- **Drag to reorder** — grab the ⠿ handle to arrange Epics in your own review
+  order. The first drag freezes the order currently on screen and then applies
+  the move, so it works from any sort. A "My order" sort option and a **Reset
+  order** button appear once an order exists. Dragging near the top or bottom of
+  the window scrolls the page.
+- **× to remove from view** — takes an Epic out of the tab, including out of its
+  KPIs. Removed Epics collect in a bar above the table and come back with one
+  click, or all at once.
+
+Manual order and removed Epics are stored per browser and per PI in
+`localStorage`. They are a personal reading aid: Sync never writes them back to
+Jira, and other people opening the same workbook see the default order.
+
+### The Committed field
+
+Teams mark an Epic Uncommitted when dependencies mean they cannot guarantee it
+for the Planned PI. The tool finds the field automatically by name (`Committed`,
+`Commitment`, `PI Commitment`, …) on each Full Sync. If your Jira names it
+something else, pin it explicitly:
+
+```
+JIRA_COMMITTED_FIELD=customfield_XXXXX
+```
+
+The value is stored in the `Committed` column of the Epics sheet. Workbooks
+synced before this column existed still open fine — the tab then says the field
+is not in the workbook and the filter stays inactive until the next Full Sync.
 
 ## Changing the dashboard
 

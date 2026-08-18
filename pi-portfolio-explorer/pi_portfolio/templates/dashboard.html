@@ -55,6 +55,17 @@ section{margin:28px 0}.sh{font-family:var(--disp);font-weight:600;font-size:18px
 .tab{border:none;background:none;padding:10px 14px;font:600 13px var(--sans);color:var(--label);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tab.on{color:var(--ink);border-bottom-color:var(--accent)}
 .tabview{display:none}.tabview.on{display:block}
+/* Epic progress: manual ordering + hide-from-view */
+.dragh{cursor:grab;user-select:none;touch-action:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:22px;border-radius:5px;color:var(--faint);font-size:13px;line-height:1}
+.dragh:hover{color:var(--accent);background:var(--accent-soft)}
+.dragh:active{cursor:grabbing}
+.rmbtn{cursor:pointer;border:none;background:none;padding:0;width:20px;height:22px;border-radius:5px;color:var(--faint);font-size:14px;line-height:1}
+.rmbtn:hover{color:var(--red,#d64545);background:#d6454518}
+tr.dragging{opacity:.4}
+tr.drop-before td{box-shadow:inset 0 2px 0 0 var(--accent)}
+tr.drop-after td{box-shadow:inset 0 -2px 0 0 var(--accent)}
+.hidchip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;border:1px solid var(--card-bd);background:var(--card);color:var(--label);font:600 11px var(--sans);cursor:pointer}
+.hidchip:hover{border-color:var(--accent);color:var(--accent)}
 .mtoggle{display:flex;gap:6px;flex-wrap:wrap}
 .mchip{border:1px solid var(--card-bd);background:#fff;border-radius:8px;padding:5px 11px;font:600 11px var(--sans);color:var(--label);cursor:pointer}
 .mchip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -207,17 +218,24 @@ body[data-theme="dark"] .tabview[data-v="teams"] .kb-list::-webkit-scrollbar-cor
 </div>
 
 <div class="tabview" data-v="progress">
-  <div class="toolbar"><div><h2 class="sh">Epic progress</h2><p class="ssub">Actual sprint movement per Epic from child-ticket sprint codes, plus done-SP progress. Filter by team above, and by parent link / priority below.</p></div></div>
+  <div class="toolbar"><div><h2 class="sh">Epic progress</h2><p class="ssub">Actual sprint movement per Epic from child-ticket sprint codes, plus done-SP progress. Filter by team above, and by Epic team / commitment / parent link below. Drag the handle to set your own order, and use × to take an Epic out of this view.</p></div></div>
   <div class="kpis" id="progressOverallKpis" style="margin-bottom:12px"></div>
   <div class="card" style="padding:14px 16px;margin-bottom:12px">
     <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+      <div class="fgroup"><span class="lbl">Epic team</span><span class="mtoggle" id="progressEpicTeam"></span></div>
+      <div class="fgroup"><span class="lbl">Commitment</span><span class="mtoggle" id="progressCommitted"></span></div>
       <div class="fgroup"><span class="lbl">Product</span><span class="mtoggle" id="progressProduct"></span></div>
       <div class="fgroup"><span class="lbl">Parent link</span><span class="mtoggle" id="progressParent"></span></div>
       <div class="fgroup"><span class="lbl">Sort</span><span class="mtoggle" id="progressSort"></span></div>
     </div>
     <div class="legend" id="progressLegend" style="margin-top:10px"></div>
   </div>
+  <div id="progressHiddenBar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;
+       padding:9px 12px;border:1px dashed var(--card-bd);border-radius:11px;background:var(--card)">
+  </div>
   <div id="progressToggleBar" style="display:none;gap:8px;justify-content:flex-end;align-items:center;margin:8px 0 10px">
+    <span id="progressOrderNote" style="margin-right:auto;font:600 11px var(--sans);color:var(--faint)"></span>
+    <button class="ghostbtn" id="resetProgressOrder" type="button" style="display:none">Reset order</button>
     <button class="ghostbtn" id="toggleAllProgressTickets" type="button">Expand all</button>
   </div>
   <div class="card tcard"><div id="epicProgressGantt" style="overflow:auto"></div></div>
@@ -344,7 +362,8 @@ const productLabel=v=>v==="spo4"?"SPO4":v==="maintain"?"Maintain":"All products"
 const productFiltered=epics=>fProduct==="all"?(epics||[]).slice():(epics||[]).filter(e=>productOf(e)===fProduct);
 
 /* ---------- state ---------- */
-let tab="overview", fTeam="All", fProduct="all", progressParent="all", progressSort="epic", parentGanttSort="name", qualityGroup="epic", kanbanTeam="All", kanbanProduct="all", kanbanParent="all", kanbanSprint="all", predGroup="sprint", predTeam="All", predProduct="all";
+let tab="overview", fTeam="All", fProduct="all", progressParent="all", progressSort="epic",
+    progressEpicTeam="All", progressCommitted="all", progressOrder=[], progressHidden=[], parentGanttSort="name", qualityGroup="epic", kanbanTeam="All", kanbanProduct="all", kanbanParent="all", kanbanSprint="all", predGroup="sprint", predTeam="All", predProduct="all";
 const ticketTeamOf=t=>String((t&&t.team)||"").trim()||"No team";
 // Allocate each Epic's remaining PI SP across the Teams that own its PI tickets.
 // Known ticket SP stays with the ticket Team. Any remaining, not-yet-created
@@ -461,6 +480,65 @@ function plLabelHtml(key,name,w="430px"){
   return `<div title="${escHtml(title)}" style="max-width:${w};display:flex;align-items:center;gap:8px;white-space:nowrap">${code}${namePart}</div>`;
 }
 const bar=(pct,w=100,h=12)=>{const width=typeof w==="number"?`${w}px`:String(w);return `<div style="height:${h}px;width:${width};background:var(--line);border-radius:999px;overflow:hidden"><div style="height:${h}px;width:${Math.max(0,Math.min(100,pct))}%;background:var(--adj);border-radius:999px"></div></div>`;};
+
+/* ---------- Epic progress: personal view state ----------
+   Manual order and hidden Epics are per browser and per PI: they are a reading
+   aid on top of the workbook, never something Sync writes back to Jira. */
+const EPIC_TEAMS=[...new Set(EPICS.map(teamOf))].sort((a,b)=>a.localeCompare(b));
+const committedOf=e=>String((e&&e.committed)||"").trim();
+const COMMITMENT_VALUES=[...new Set(EPICS.map(committedOf).filter(Boolean))];
+const HAS_COMMITMENT=COMMITMENT_VALUES.length>0;
+const PROGRESS_PREF_KEY=`piPortfolioProgress:${String(META.piName||"").trim()||"pi"}`;
+function loadProgressPrefs(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(PROGRESS_PREF_KEY)||"{}");
+    const keys=new Set(EPICS.map(e=>String(e.key||"")));
+    progressOrder=(Array.isArray(raw.order)?raw.order:[]).filter(k=>keys.has(k));
+    progressHidden=(Array.isArray(raw.hidden)?raw.hidden:[]).filter(k=>keys.has(k));
+    if(raw.sort==="manual"&&progressOrder.length)progressSort="manual";
+  }catch(e){progressOrder=[];progressHidden=[];}
+}
+function saveProgressPrefs(){
+  try{localStorage.setItem(PROGRESS_PREF_KEY,JSON.stringify({order:progressOrder,hidden:progressHidden,sort:progressSort}));}catch(e){}
+}
+const isHiddenEpic=e=>progressHidden.includes(String(e&&e.key||""));
+function hideEpic(key){
+  if(!progressHidden.includes(key))progressHidden.push(key);
+  saveProgressPrefs();renderProgress();
+}
+function restoreEpic(key){
+  progressHidden=progressHidden.filter(k=>k!==key);
+  saveProgressPrefs();renderProgress();
+}
+function restoreAllEpics(){progressHidden=[];saveProgressPrefs();renderProgress();}
+function resetProgressOrder(){
+  progressOrder=[];
+  if(progressSort==="manual")progressSort="epic";
+  saveProgressPrefs();renderProgress();
+}
+const manualRank=key=>{const i=progressOrder.indexOf(key);return i<0?Number.MAX_SAFE_INTEGER:i;};
+// The first drag freezes whatever order is on screen, then applies the move, so
+// dragging works straight from any automatic sort without a surprise reshuffle.
+function reorderEpics(srcKey,dstKey,after){
+  if(!srcKey||srcKey===dstKey)return;
+  const visible=[...document.querySelectorAll("#epicProgressGantt tr[data-epic-row]")].map(r=>r.dataset.epicRow);
+  const from=visible.indexOf(srcKey);
+  if(from<0)return;
+  visible.splice(from,1);
+  let to=visible.indexOf(dstKey);
+  if(to<0)to=visible.length-1;
+  visible.splice(after?to+1:to,0,srcKey);
+  // Epics that are filtered out or hidden keep their relative order behind the
+  // visible ones, so switching filters never scrambles an order you set earlier.
+  const seen=new Set(visible), tail=[];
+  [...progressOrder,...EPICS.map(e=>String(e.key||""))].forEach(k=>{
+    if(k&&!seen.has(k)){seen.add(k);tail.push(k);}
+  });
+  progressOrder=[...visible,...tail];
+  progressSort="manual";
+  saveProgressPrefs();
+  renderProgress();
+}
 
 /* ---------- tabs + filters ---------- */
 function renderTabs(){
@@ -740,7 +818,27 @@ function barCells(tl){
 }
 function renderProgress(){
   chips("progressProduct",PRODUCT_OPTIONS,fProduct,v=>{fProduct=v;progressParent="all";renderProgress();});
-  const epics=productFiltered(filteredEpics());
+  // Epic team is the Epic's own assigned Team field, unlike the team pills above
+  // which also match an Epic through any of its child tickets.
+  if(progressEpicTeam!=="All"&&!EPIC_TEAMS.includes(progressEpicTeam))progressEpicTeam="All";
+  chips("progressEpicTeam",[["All","All"],...EPIC_TEAMS.map(t=>[t,t])],progressEpicTeam,
+        v=>{progressEpicTeam=v;progressParent="all";renderProgress();});
+  const commitmentOptions=[["all","All"],
+    ...COMMITMENT_VALUES.slice().sort().map(v=>[v,v]),
+    ...(EPICS.some(e=>!committedOf(e))&&HAS_COMMITMENT?[["unset","Not set"]]:[])];
+  if(!commitmentOptions.some(o=>o[0]===progressCommitted))progressCommitted="all";
+  if(HAS_COMMITMENT){
+    chips("progressCommitted",commitmentOptions,progressCommitted,v=>{progressCommitted=v;renderProgress();});
+  }else{
+    progressCommitted="all";
+    const el=document.getElementById("progressCommitted");
+    if(el)el.innerHTML=`<span style="font:400 11px var(--sans);color:var(--faint)">Not in this workbook — run a Full Sync to load the Jira Committed field.</span>`;
+  }
+  const epics=productFiltered(filteredEpics())
+    .filter(e=>progressEpicTeam==="All"||teamOf(e)===progressEpicTeam)
+    .filter(e=>progressCommitted==="all"
+      ||(progressCommitted==="unset"?!committedOf(e):committedOf(e)===progressCommitted))
+    .filter(e=>!isHiddenEpic(e));
   const parents=groupByParent(epics);
   const parentOptions=[["all","All"],...parents.map(g=>[g.key,g.name&&g.name!==g.key?g.name:g.key])];
   if(!parentOptions.some(x=>x[0]===progressParent))progressParent="all";
@@ -748,33 +846,133 @@ function renderProgress(){
   const baseRows=epics.filter(e=>progressParent==="all"||plKey(e)===progressParent).map(e=>({e,tl:actualTimeline(e)}));
   const selectedParent=progressParent==="all"?"All Parent Links":(parents.find(g=>g.key===progressParent)?.name||progressParent);
   renderProgressOverall("progressOverallKpis",baseRows.map(r=>r.e),`${fTeam==="All"?"All teams":fTeam} · ${productLabel(fProduct)} · ${selectedParent}`,"epic");
-  chips("progressSort",[["epic","Epic key"],["gantt","By Gantt"],["pct","By progress"]],progressSort,v=>{progressSort=v;renderProgress();});
+  const sortOptions=[["epic","Epic key"],["gantt","By Gantt"],["pct","By progress"],
+                     ...(progressOrder.length?[["manual","My order"]]:[])];
+  if(!sortOptions.some(o=>o[0]===progressSort))progressSort="epic";
+  chips("progressSort",sortOptions,progressSort,v=>{progressSort=v;saveProgressPrefs();renderProgress();});
   function rowCompare(a,b){
-    if(progressSort==="gantt"){const sa=a.tl?a.tl.start:Infinity,sb=b.tl?b.tl.start:Infinity;if(sa!==sb)return sa-sb;const da=a.tl?a.tl.end-a.tl.start:Infinity,db=b.tl?b.tl.end-b.tl.start:Infinity;if(da!==db)return da-db;}
+    if(progressSort==="manual"){
+      const ra=manualRank(String(a.e.key||"")),rb=manualRank(String(b.e.key||""));
+      if(ra!==rb)return ra-rb;
+    }
+    else if(progressSort==="gantt"){const sa=a.tl?a.tl.start:Infinity,sb=b.tl?b.tl.start:Infinity;if(sa!==sb)return sa-sb;const da=a.tl?a.tl.end-a.tl.start:Infinity,db=b.tl?b.tl.end-b.tl.start:Infinity;if(da!==db)return da-db;}
     else if(progressSort==="pct"){const pa=piProgressPct(a.e),pb=piProgressPct(b.e);if(pa!==pb)return pb-pa;}
     return String(a.e.key||"").localeCompare(String(b.e.key||""));
   }
   const rows=baseRows.sort(rowCompare),withMovement=baseRows.filter(r=>r.tl).length;
   const head=Array.from({length:NS},(_,i)=>`<th style="text-align:center;min-width:52px">${sprintLabel(i)}</th>`).join("");
-  const colgroup=`<colgroup><col style="width:38px"><col style="width:110px"><col style="width:130px"><col style="width:230px"><col style="width:120px">${Array.from({length:NS},()=>`<col style="width:54px">`).join("")}</colgroup>`;
+  const colgroup=`<colgroup><col style="width:66px"><col style="width:34px"><col style="width:110px"><col style="width:130px"><col style="width:230px"><col style="width:120px">${Array.from({length:NS},()=>`<col style="width:54px">`).join("")}</colgroup>`;
   const doneBadge=e=>epicDone(e)?`<span title="Epic and all tickets are Closed" style="display:inline-flex;align-items:center;justify-content:center;height:18px;padding:0 7px;border-radius:999px;background:var(--adj-soft);color:var(--adj);font-weight:900;font-size:11px;margin-left:4px">done</span>`:closurePendingBadge(e);
-  let html=`<table class="dt progress-table" style="width:100%;min-width:${538+NS*54}px;table-layout:fixed">${colgroup}<thead><tr><th></th><th>Epic</th><th>Team</th><th>Summary</th><th>Progress</th>${head}</tr></thead><tbody>`;
-  if(!rows.length)html+=`<tr><td colspan="${5+NS}" style="color:#888">No Epics match the selected filters.</td></tr>`;
+  let html=`<table class="dt progress-table" style="width:100%;min-width:${600+NS*54}px;table-layout:fixed">${colgroup}<thead><tr><th></th><th></th><th>Epic</th><th>Team</th><th>Summary</th><th>Progress</th>${head}</tr></thead><tbody>`;
+  if(!rows.length)html+=`<tr><td colspan="${6+NS}" style="color:#888">No Epics match the selected filters.</td></tr>`;
   rows.forEach(({e,tl},idx)=>{
     const planned=piProgressTotalSp(e),closed=piProgressClosedSp(e),pct=piProgressPct(e),detailId=`progressTickets_${idx}`;
     const tickets=(e.tickets||[]).slice().sort((a,b)=>{const api=(a.sprints||[]).some(sprintBelongsToSelectedPi),bpi=(b.sprints||[]).some(sprintBelongsToSelectedPi);return api!==bpi?(api?-1:1):String(a.key||"").localeCompare(String(b.key||""));});
-    html+=`<tr><td><button class="ghostbtn" style="padding:3px 7px" data-progress-toggle="${detailId}" ${tickets.length?'':'disabled'}>${tickets.length?'+':'—'}</button></td><td>${issueLink(e.key,"100px")}${doneBadge(e)}</td><td>${teamPill(teamOf(e),"122px")}</td><td title="${escHtml(e.summary||'')}">${escHtml(e.summary||'')}</td><td><div style="display:flex;align-items:center;gap:6px;justify-content:center"><b>${pc(pct)}</b>${bar(pct,64,8)}<span style="font-size:10px;color:var(--faint)">${f1(closed)}/${f1(planned)} SP</span></div></td>${barCells(tl)}</tr>`;
+    const epicKey=String(e.key||"");
+    html+=`<tr data-epic-row="${escHtml(epicKey)}"><td><div style="display:flex;align-items:center;gap:2px"><span class="dragh" data-drag-handle="${escHtml(epicKey)}" title="Drag to reorder">⠿</span><button class="rmbtn" data-remove-epic="${escHtml(epicKey)}" title="Remove ${escHtml(epicKey)} from this view" type="button">×</button></div></td><td><button class="ghostbtn" style="padding:3px 7px" data-progress-toggle="${detailId}" ${tickets.length?'':'disabled'}>${tickets.length?'+':'—'}</button></td><td>${issueLink(e.key,"100px")}${doneBadge(e)}</td><td>${teamPill(teamOf(e),"122px")}</td><td title="${escHtml(e.summary||'')}">${escHtml(e.summary||'')}</td><td><div style="display:flex;align-items:center;gap:6px;justify-content:center"><b>${pc(pct)}</b>${bar(pct,64,8)}<span style="font-size:10px;color:var(--faint)">${f1(closed)}/${f1(planned)} SP</span></div></td>${barCells(tl)}</tr>`;
     if(tickets.length){
       const ticketRows=tickets.map(t=>{const inPi=(t.sprints||[]).some(sprintBelongsToSelectedPi),piCodes=(t.sprints||[]).filter(sprintBelongsToSelectedPi),allCodes=t.sprints||[];return `<tr style="opacity:${inPi?1:0.35}"><td>${issueLink(t.key,"105px")}</td><td>${teamPill(ticketTeamOf(t),"135px")}</td><td>${escHtml(t.issueType||'—')}</td><td>${escHtml(t.status||'—')}</td><td>${f1(t.sp||0)}</td><td>${escHtml((inPi?piCodes:allCodes).join(', ')||'—')}</td><td>${inPi?'In PI':'Outside PI'}</td><td>${escHtml(t.summary||'')}</td></tr>`;}).join('');
-      html+=`<tr id="${detailId}" style="display:none;background:var(--bg)"><td colspan="${5+NS}"><table class="dt"><thead><tr><th>Ticket</th><th>Team</th><th>Type</th><th>Status</th><th>SP</th><th>Sprint(s)</th><th>PI planning</th><th>Summary</th></tr></thead><tbody>${ticketRows}</tbody></table></td></tr>`;
+      html+=`<tr id="${detailId}" style="display:none;background:var(--bg)"><td colspan="${6+NS}"><table class="dt"><thead><tr><th>Ticket</th><th>Team</th><th>Type</th><th>Status</th><th>SP</th><th>Sprint(s)</th><th>PI planning</th><th>Summary</th></tr></thead><tbody>${ticketRows}</tbody></table></td></tr>`;
     }
   });
   html+=`</tbody></table>`;document.getElementById("epicProgressGantt").innerHTML=html;
   const buttons=[...document.querySelectorAll("[data-progress-toggle]")].filter(b=>!b.disabled),barEl=document.getElementById("progressToggleBar"),all=document.getElementById("toggleAllProgressTickets");
   const isOpen=b=>{const r=document.getElementById(b.dataset.progressToggle);return r&&r.style.display!=="none";},allOpen=()=>buttons.length&&buttons.every(isOpen),set=(b,o)=>{const r=document.getElementById(b.dataset.progressToggle);if(r){r.style.display=o?"table-row":"none";b.textContent=o?"−":"+";}},refresh=()=>{if(barEl)barEl.style.display=buttons.length?"flex":"none";if(all)all.textContent=allOpen()?"Hide all":"Expand all";};
   buttons.forEach(b=>b.onclick=()=>{set(b,!isOpen(b));refresh();});if(all)all.onclick=()=>{const o=!allOpen();buttons.forEach(b=>set(b,o));refresh();};refresh();
-  const scope=`${productLabel(fProduct)} · ${fTeam==="All"?"all teams":fTeam}`;
+  wireProgressRowTools();
+  renderProgressHiddenBar();
+  const orderNote=document.getElementById("progressOrderNote"),resetBtn=document.getElementById("resetProgressOrder");
+  if(orderNote)orderNote.textContent=progressSort==="manual"?"Showing your own order — drag the ⠿ handle to change it.":"";
+  if(resetBtn){resetBtn.style.display=progressOrder.length?"inline-block":"none";resetBtn.onclick=resetProgressOrder;}
+  const scope=`${productLabel(fProduct)} · ${fTeam==="All"?"all teams":fTeam}`
+    +(progressEpicTeam==="All"?"":` · Epic team ${progressEpicTeam}`)
+    +(progressCommitted==="all"?"":` · ${progressCommitted==="unset"?"commitment not set":progressCommitted}`)
+    +(progressHidden.length?` · ${progressHidden.length} removed from view`:"");
   document.getElementById("progressLegend").innerHTML=`<span><i style="background:var(--adj)"></i>Actual Jira sprint movement</span><span style="color:var(--faint)">Scope: ${escHtml(scope)}. Progress is Closed selected-PI ticket SP divided by total selected-PI ticket SP; Epic estimate is fallback only when no ticket SP exists. Expand an Epic to inspect all child tickets; tickets outside PI ${escHtml(META.piName||'')} planning are shown with low opacity.</span>`;
+}
+
+/* Drag-to-reorder and remove-from-view for the Epic progress rows.
+   Pointer events rather than HTML5 drag-and-drop: they behave consistently
+   across browsers, work with touch, and can be driven by tests. The list runs
+   to dozens of Epics, so dragging near the top or bottom edge scrolls the page
+   and keeps re-evaluating the drop target underneath the pointer. */
+function wireProgressRowTools(){
+  const root=document.getElementById("epicProgressGantt");
+  if(!root)return;
+  root.querySelectorAll("[data-remove-epic]").forEach(b=>{
+    b.onclick=ev=>{ev.stopPropagation();hideEpic(b.dataset.removeEpic);};
+  });
+  let drag=null,scrollTimer=null;
+  const clearMarks=()=>root.querySelectorAll(".drop-before,.drop-after,.dragging")
+    .forEach(x=>x.classList.remove("drop-before","drop-after","dragging"));
+  const stopAutoScroll=()=>{if(scrollTimer){clearInterval(scrollTimer);scrollTimer=null;}};
+  function updateTarget(){
+    if(!drag)return;
+    const el=document.elementFromPoint(drag.x,drag.y);
+    const row=el&&el.closest?el.closest("tr[data-epic-row]"):null;
+    // Outside the viewport elementFromPoint yields nothing; keep the last good
+    // target rather than dropping the move on the floor.
+    if(!row||!root.contains(row)||row===drag.row)return;
+    root.querySelectorAll(".drop-before,.drop-after")
+      .forEach(x=>x.classList.remove("drop-before","drop-after"));
+    const r=row.getBoundingClientRect(),after=drag.y>r.top+r.height/2;
+    drag.target=row.dataset.epicRow;
+    drag.after=after;
+    row.classList.toggle("drop-after",after);
+    row.classList.toggle("drop-before",!after);
+  }
+  function autoScroll(){
+    if(!drag)return stopAutoScroll();
+    const margin=100,step=16;
+    if(drag.y<margin)window.scrollBy(0,-step);
+    else if(drag.y>window.innerHeight-margin)window.scrollBy(0,step);
+    else return;
+    updateTarget();
+  }
+  root.querySelectorAll("[data-drag-handle]").forEach(handle=>{
+    handle.addEventListener("pointerdown",ev=>{
+      if(ev.button!==0)return;
+      ev.preventDefault();
+      drag={key:handle.dataset.dragHandle,row:handle.closest("tr"),
+            moved:false,target:null,after:false,x:ev.clientX,y:ev.clientY};
+      try{handle.setPointerCapture(ev.pointerId);}catch(err){}
+      if(!scrollTimer)scrollTimer=setInterval(autoScroll,16);
+    });
+    handle.addEventListener("pointermove",ev=>{
+      if(!drag)return;
+      ev.preventDefault();
+      drag.x=ev.clientX;drag.y=ev.clientY;
+      if(!drag.moved){drag.moved=true;if(drag.row)drag.row.classList.add("dragging");}
+      updateTarget();
+    });
+    const finish=ev=>{
+      if(!drag)return;
+      const done=drag;
+      drag=null;
+      stopAutoScroll();
+      try{handle.releasePointerCapture(ev.pointerId);}catch(err){}
+      clearMarks();
+      if(done.moved&&done.target)reorderEpics(done.key,done.target,done.after);
+    };
+    handle.addEventListener("pointerup",finish);
+    handle.addEventListener("pointercancel",finish);
+  });
+}
+function renderProgressHiddenBar(){
+  const bar=document.getElementById("progressHiddenBar");
+  if(!bar)return;
+  if(!progressHidden.length){bar.style.display="none";bar.innerHTML="";return;}
+  const byKey=new Map(EPICS.map(e=>[String(e.key||""),e]));
+  const chipsHtml=progressHidden.map(k=>{
+    const e=byKey.get(k);
+    const title=e&&e.summary?`${k} · ${e.summary}`:k;
+    return `<button class="hidchip" data-restore-epic="${escHtml(k)}" title="${escHtml(title)} — click to bring back" type="button">${escHtml(k)} <span style="font-weight:900">+</span></button>`;
+  }).join(" ");
+  bar.style.display="flex";
+  bar.innerHTML=`<span style="font:600 11px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--faint)">Removed from view (${progressHidden.length})</span>${chipsHtml}<button class="ghostbtn" id="restoreAllEpics" type="button" style="margin-left:auto">Bring all back</button>`;
+  bar.querySelectorAll("[data-restore-epic]").forEach(b=>b.onclick=()=>restoreEpic(b.dataset.restoreEpic));
+  const allBtn=document.getElementById("restoreAllEpics");
+  if(allBtn)allBtn.onclick=restoreAllEpics;
 }
 
 function renderPiPortfolioDetail(){
@@ -950,6 +1148,7 @@ function applyTheme(mode){
   if(btn)btn.title=chosen==="dark"?"Switch to light mode":"Switch to dark mode";
 }
 function init(){
+  loadProgressPrefs();
   let saved="light";
   try{saved=localStorage.getItem("piPortfolioTheme")||"light";}catch(e){}
   applyTheme(saved);

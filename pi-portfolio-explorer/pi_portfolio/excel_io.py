@@ -91,8 +91,8 @@ def write_portfolio_excel(data, path=None):
     epic_headers = [*("Epic", "Team", "Product", "Parent Link", "Parent Link Name", "Status",
                       "Epic Closed", "All Tickets Closed", "Closure Pending", "Total SP", "Done SP",
                       "Progress %", "Ticket Count", "Planned PI", "Discipline", "Sprint Movement",
-                      "Summary", "Epic SP")]
-    ew = [*(15, 23, 12, 16, 38, 18, 12, 16, 15, 12, 12, 12, 12, 13, 20, 24, 60, 12)]
+                      "Summary", "Epic SP", "Committed")]
+    ew = [*(15, 23, 12, 16, 38, 18, 12, 16, 15, 12, 12, 12, 12, 13, 20, 24, 60, 12, 14)]
     ews = setup_sheet("Epics", "Epics", "One row per Epic. Progress counts SP only from tickets whose Jira status is exactly Closed.", epic_headers, ew, C["purple"])
     ticket_rows = []
     for e in epics:
@@ -110,7 +110,7 @@ def write_portfolio_excel(data, path=None):
             e.get("parentLink", ""), e.get("parentLinkName", ""), e.get("status", ""),
             epic_closed, all_closed, pending, total, closed_sp, None, len(tickets),
             e.get("ppi", ""), e.get("discipline", ""), ", ".join(codes), e.get("summary", ""),
-            float(e.get("sp") or 0),
+            float(e.get("sp") or 0), e.get("committed", ""),
         ])
         er = ews.max_row
         ews.cell(er, 12, f"=IF(I{er},99%,IF(AND(G{er},H{er}),100%,IFERROR(K{er}/J{er},0)))")
@@ -131,7 +131,7 @@ def write_portfolio_excel(data, path=None):
             ews.cell(row, 9).fill = PatternFill("solid", fgColor=C["soft_amber"])
             ews.cell(row, 9).font = Font(color=C["amber"], bold=True)
     if ews.max_row >= 5:
-        tab = Table(displayName="EpicData", ref=f"A4:R{ews.max_row}")
+        tab = Table(displayName="EpicData", ref=f"A4:S{ews.max_row}")
         tab.tableStyleInfo = TableStyleInfo(name="TableStyleMedium4", showRowStripes=True, showColumnStripes=False)
         ews.add_table(tab)
 
@@ -332,6 +332,7 @@ def read_portfolio_excel(path=None):
                 "doneSp": float(d.get("Done SP") or 0),
                 "ppi": d.get("Planned PI") or "",
                 "discipline": d.get("Discipline") or "",
+                "committed": d.get("Committed") or "",
                 "summary": d.get("Summary") or "",
                 "tickets": [],
             }

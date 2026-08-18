@@ -8,6 +8,7 @@ from .config import (
     CONFIG_EPIC_PARENT_LINK_FIELD,
     CONFIG_EPIC_TEAM_FIELD,
     CONFIG_TICKET_SPRINT_FIELD,
+    CONFIG_EPIC_COMMITTED_FIELD,
     CONFIG_BULK_EPIC_BATCH,
 )
 from .fields import (
@@ -334,6 +335,48 @@ class JiraClient:
             self._epic_link_field_cache = ""
         return self._epic_link_field_cache
 
+    def _detect_committed_field(self):
+        """Find the Jira field holding Committed / Uncommitted for the Planned PI.
+
+        Teams set this per Epic to flag work they cannot guarantee for the PI.
+        CONFIG_EPIC_COMMITTED_FIELD (env JIRA_COMMITTED_FIELD) pins the id;
+        otherwise it is matched by field name once per run.
+        """
+        if hasattr(self, "_committed_field_cache"):
+            return self._committed_field_cache
+        if CONFIG_EPIC_COMMITTED_FIELD:
+            self._committed_field_cache = CONFIG_EPIC_COMMITTED_FIELD
+            print(f"[committed] using configured field {CONFIG_EPIC_COMMITTED_FIELD}")
+            return self._committed_field_cache
+        self._committed_field_cache = ""
+        try:
+            for f in self._get("/rest/api/2/field"):
+                name = str(f.get("name") or "").strip().lower()
+                if name in ("committed", "commitment", "pi commitment", "committed?",
+                            "commitment status", "pi commitment status"):
+                    self._committed_field_cache = f.get("id") or ""
+                    print(f"[committed] matched field by name '{name}' -> {self._committed_field_cache}")
+                    break
+        except Exception as e:
+            print(f"[committed] could not read the Jira field list ({e})", file=sys.stderr)
+        if not self._committed_field_cache:
+            print("[committed] no Committed field found; set JIRA_COMMITTED_FIELD to its "
+                  "custom field id to enable the committed/uncommitted filter", file=sys.stderr)
+        return self._committed_field_cache
+
+    @staticmethod
+    def _committed_value(fields, committed_field):
+        """Normalize the Committed field to 'Committed', 'Uncommitted' or ''."""
+        if not committed_field:
+            return ""
+        txt = _ppi_value((fields or {}).get(committed_field)).strip()
+        low = txt.lower()
+        if low.startswith("uncommit") or low.startswith("un-commit") or low in ("no", "false"):
+            return "Uncommitted"
+        if low.startswith("commit") or low in ("yes", "true"):
+            return "Committed"
+        return txt
+
     def _issue_epic_ref_key(self, fields, epic_link_field=""):
         fields = fields or {}
         parent = fields.get("parent")
@@ -581,13 +624,16 @@ class JiraClient:
         """Read ALL Epics on the Kanban board matching the target PI, for every team.
 
         Returns a list of epic dicts:
-          key, summary, status, closed, team, ppi, priority, discipline,
+          key, summary, status, closed, team, ppi, priority, discipline, committed,
           parentLink, parentLinkName, sp (remaining/display), totalSp, doneSp,
           tickets: [key, summary, status, closed, sp, doneSp, discipline, sprints]
         """
+        committed_field = self._detect_committed_field()
         extra_fields = [ppi_field, CONFIG_EPIC_PARENT_LINK_FIELD]
         if team_field:
             extra_fields.append(team_field)
+        if committed_field:
+            extra_fields.append(committed_field)
         extra_fields_with_priority = list(extra_fields)
         if priority_field:
             extra_fields_with_priority.append(priority_field)
@@ -666,6 +712,7 @@ class JiraClient:
             epic_done_sp, epic_done_src = self._demand_done_sp_value(fl)
             epic_priority = self._epic_priority_value(fl, priority_field)
             epic_disc = self._discipline(fl)
+            epic_committed = self._committed_value(fl, committed_field)
             status = (fl.get("status") or {}).get("name", "")
             epic_closed = self._issue_is_closed(fl)
             # Only trust an explicit done/total field as "done SP" on an open epic.
@@ -726,6 +773,7 @@ class JiraClient:
                 "ppi": ppi,
                 "priority": epic_priority,
                 "discipline": epic_disc,
+                "committed": epic_committed,
                 "parentLink": parent_link,
                 "parentLinkName": parent_link_name,
                 "sp": round(float(epic_sp or 0), 2),
