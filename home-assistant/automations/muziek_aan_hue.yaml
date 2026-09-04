@@ -1,0 +1,124 @@
+# =====================================================================
+# "Muziek aan hue" — vervangende automatisering
+# ---------------------------------------------------------------------
+# Plakken over de bestaande: Instellingen → Automatiseringen & scènes →
+# "Muziek aan hue" → drie puntjes rechtsboven → Bewerken in YAML →
+# alles selecteren (Ctrl+A) → dit erover plakken → Opslaan.
+#
+# WAT ER MIS WAS:
+#
+# 1) De play_media-actie had de gegevens onder een extra "media:"-laag
+#    staan. De actie verwacht media_content_id en media_content_type
+#    direct onder "data:", dus de aanroep sneuvelde al op de validatie.
+#
+# 2) Belangrijker: een Spotify-playlist kún je niet naar een Google-
+#    speaker casten. De Chromecast kan niet inloggen bij Spotify, dus
+#    krijgt hij een URI die hij niet kan openen — en dat is precies de
+#    "er is iets misgegaan" die je hoort.
+#
+# DE OPLOSSING: niet Spotify naar de speaker duwen, maar de speaker als
+# Spotify Connect-apparaat kiezen en Spotify zelf laten afspelen.
+#
+# EENMALIG CONTROLEREN (zie ook de toelichting onderaan):
+#   - staat "spotify_bron" hieronder exact zoals in source_list?
+#   - is media_player.chromecastaudio2382 echt de keukenspeaker? In je
+#     entiteitenlijst heet chromecastaudio1336 "Keuken" en heeft 2382
+#     geen eigen naam. Klopt het niet, wissel ze dan om.
+# =====================================================================
+
+alias: Muziek aan hue
+description: >-
+  Hue-knop: scène aan, stereo aan via IR en de playlist via Spotify
+  Connect op de keukenspeaker.
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: device
+    device_id: da2b7ca9e58c6d90428c56c561de39ba
+    domain: hue
+    type: initial_press
+    subtype: 1
+    unique_id: b6d5b5c9-cd5b-4835-b80f-9cef9d97370d
+
+conditions: []
+
+actions:
+  - variables:
+      playlist: "spotify:playlist:0Vfh7Hiif45z9LdmyX1gVF"  # Dinner Chill Music
+      speaker: media_player.chromecastaudio2382
+      spotify_bron: "Keuken"      # exact zoals in source_list!
+      volume: 0.35
+
+  # --- ongewijzigd: scène en stereo aan via IR ---
+  - action: scene.turn_on
+    target:
+      device_id: e5de9f73739eda02d8cb22dea06fe203
+
+  - action: media_player.turn_on
+    target:
+      device_id:
+        - a0ec96dc59a78756db0f949993f03cb9
+        - f26a2501bf26861e488b537d5bdeac08
+
+  # De stereo en de speaker even de tijd geven om op te starten.
+  # Zonder deze pauze speelt Spotify in het niets.
+  - delay:
+      seconds: 5
+
+  # 1. Speaker wakker maken. Een Chromecast die slaapt, is voor Spotify
+  #    onzichtbaar en verschijnt dan niet in de Connect-lijst.
+  - action: media_player.volume_set
+    target:
+      entity_id: "{{ speaker }}"
+    data:
+      volume_level: "{{ volume }}"
+    continue_on_error: true
+
+  - delay:
+      seconds: 3
+
+  # 2. Spotify-afspelen verplaatsen naar de keukenspeaker.
+  - action: media_player.select_source
+    target:
+      entity_id: media_player.spotify_mark
+    data:
+      source: "{{ spotify_bron }}"
+    continue_on_error: true
+
+  - delay:
+      seconds: 2
+
+  # 3. Shuffle aan, anders begint elke avond met hetzelfde nummer.
+  - action: media_player.shuffle_set
+    target:
+      entity_id: media_player.spotify_mark
+    data:
+      shuffle: true
+    continue_on_error: true
+
+  # 4. De playlist starten — via de Spotify-entiteit, niet via de cast.
+  - action: media_player.play_media
+    target:
+      entity_id: media_player.spotify_mark
+    data:
+      media_content_type: playlist
+      media_content_id: "{{ playlist }}"
+
+  # 5. Controleren of het gelukt is. Zo niet: één melding met de lijst
+  #    speakers die Spotify op dat moment wél ziet — daarmee weet je
+  #    meteen of de naam in "spotify_bron" klopt.
+  - delay:
+      seconds: 5
+  - if:
+      - condition: template
+        value_template: "{{ not is_state('media_player.spotify_mark', 'playing') }}"
+    then:
+      - action: notify.mobile_app_iphone_van_mark
+        data:
+          title: "🎵 Muziek starten mislukt"
+          message: >-
+            Spotify staat op '{{ states('media_player.spotify_mark') }}'.
+            Spotify ziet nu deze speakers:
+            {{ state_attr('media_player.spotify_mark', 'source_list')
+               | default(['(geen)'], true) | join(', ') }}
