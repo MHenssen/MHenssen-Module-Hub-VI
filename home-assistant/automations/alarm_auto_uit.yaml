@@ -1,0 +1,96 @@
+# =====================================================================
+# Alarm automatisch uit bij thuiskomst
+# ---------------------------------------------------------------------
+# Nieuwe automatisering: Instellingen → Automatiseringen & scènes →
+# "+ Automatisering aanmaken" → "Nieuwe automatisering" → rechtsboven
+# drie puntjes → "Bewerken in YAML" → alles selecteren → dit plakken.
+#
+# EENMALIG INVULLEN: vervang JOUW_WIFI_NAAM (staat 2x hieronder in de
+# conditie) door de naam van je thuisnetwerk. Die vind je in
+# Ontwikkelaarshulpmiddelen → Statussen → sensor.iphone_van_mark_ssid,
+# terwijl je thuis bent.
+#
+# WAAROM ZOWEL GPS ALS WIFI:
+# Alleen op GPS afgaan is riskant — locaties verspringen soms tientallen
+# meters en dan schakelt je alarm zichzelf uit terwijl je er niet bent.
+# Daarom is verbinding met je eigen wifi verplicht: dat kan alleen als de
+# telefoon fysiek binnen bereik is én het wachtwoord kent. GPS is de
+# trigger, wifi is het bewijs.
+# =====================================================================
+
+alias: "Alarm: automatisch uit bij thuiskomst"
+description: >-
+  Schakelt Alarmo uit zodra Mark of Sophie thuiskomt, mits de telefoon
+  ook daadwerkelijk op het thuisnetwerk zit.
+mode: single
+max_exceeded: silent
+
+triggers:
+  # GPS: iemand komt de zone "thuis" binnen (gebeurt meestal al een
+  # stukje voor de voordeur, dus vóór het openen van de deur).
+  - trigger: state
+    entity_id:
+      - device_tracker.iphone_van_mark
+      - device_tracker.sophies_iphone
+    to: home
+    id: gps
+
+  # Wifi: vangnet als GPS traag is. De telefoon koppelt binnen enkele
+  # seconden na binnenkomst aan het netwerk.
+  - trigger: state
+    entity_id:
+      - sensor.iphone_van_mark_ssid
+      - sensor.sophies_iphone_ssid
+    to: "JOUW_WIFI_NAAM"
+    id: wifi
+
+conditions:
+  # Alleen iets doen als het alarm daadwerkelijk scherp staat. "pending"
+  # is de entry delay (het aftellen na het openen van de deur) en
+  # "triggered" betekent dat de sirene al loopt — beide willen we juist
+  # afbreken.
+  - condition: state
+    entity_id: alarm_control_panel.alarmo
+    state:
+      - armed_away
+      - armed_home
+      - armed_night
+      - armed_vacation
+      - arming
+      - pending
+      - triggered
+
+  # Het bewijs: minstens één van de twee telefoons hangt op het
+  # thuisnetwerk. Vervang JOUW_WIFI_NAAM hieronder (2x).
+  - condition: template
+    value_template: >-
+      {{ is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM')
+         or is_state('sensor.sophies_iphone_ssid', 'JOUW_WIFI_NAAM') }}
+
+actions:
+  - action: alarm_control_panel.alarm_disarm
+    target:
+      entity_id: alarm_control_panel.alarmo
+    # Zet je later een uitschakelcode aan in Alarmo, haal dan het
+    # commentaar hieronder weg en vul je code in:
+    # data:
+    #   code: "1234"
+
+  # Even melden wie er thuiskwam — zo zie je altijd terug waarom het
+  # alarm uitging, en merk je meteen als het onterecht gebeurt.
+  - action: notify.mobile_app_iphone_van_mark
+    data:
+      title: "🔓 Alarm automatisch uit"
+      message: >-
+        {% if is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM')
+              and is_state('sensor.sophies_iphone_ssid', 'JOUW_WIFI_NAAM') %}
+          Mark en Sophie zijn thuis.
+        {% elif is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM') %}
+          Mark is thuisgekomen.
+        {% else %}
+          Sophie is thuisgekomen.
+        {% endif %}
+        Welkom thuis!
+      data:
+        push:
+          interruption-level: passive
