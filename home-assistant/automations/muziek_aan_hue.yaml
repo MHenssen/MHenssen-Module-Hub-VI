@@ -45,7 +45,7 @@ conditions: []
 
 actions:
   - variables:
-      playlist: "spotify:playlist:0Vfh7Hiif45z9LdmyX1gVF"  # Dinner Chill Music
+      playlist: "spotify:playlist:37i9dQZF1E8HrWDdQkYjQi"  # Banana Pancakes Radio
       speaker: media_player.chromecastaudio2382
       spotify_bron: "Keuken"      # exact zoals in source_list!
       volume: 0.35
