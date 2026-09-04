@@ -1,0 +1,115 @@
+# =====================================================================
+# "Achterdeur alarm" — vervangende automatisering
+# ---------------------------------------------------------------------
+# Plakken over de bestaande: Instellingen → Automatiseringen & scènes →
+# "Achterdeur alarm" → drie puntjes → Bewerken in YAML → Ctrl+A →
+# dit erover plakken → Opslaan.
+#
+# EENMALIG INVULLEN: vervang JOUW_WIFI_NAAM (1x, in de conditie).
+#
+# WAT ER IS VERANDERD:
+#
+# 1) NIET MEER AFGAAN ALS JE NET THUIS BENT. Nieuwe conditie: is een van
+#    de telefoons in de afgelopen 15 minuten thuisgekomen (GPS of wifi),
+#    dan gebeurt er niets. Slaap je gewoon thuis, dan is die verbinding
+#    uren oud en werkt het alarm dus wél — precies de bedoeling.
+#
+# 2) JE KRIJGT NU EEN MELDING. Met camerafoto van de achterdeur, als
+#    kritieke melding zodat hij door stil/focus heen komt. Herrie zonder
+#    informatie is nutteloos als je boven ligt te slapen.
+#
+# 3) SIRENE GAAT VANZELF UIT na 3 minuten, in plaats van doorlopen tot
+#    de interne timer afloopt.
+#
+# 4) ALLEEN DE LOSSE SIRENE (siren.sensor_sirene), niet meer de
+#    camerasirenes — zoals afgesproken.
+#
+# De buitenverlichting laat ik wél aan: bij een echt geopende deur
+# midden in de nacht is licht in tuin en voordeur juist gewenst.
+# =====================================================================
+
+alias: Achterdeur alarm
+description: >-
+  Sirene, buitenverlichting en een melding met camerabeeld als de
+  achter- of voordeur 's nachts opengaat — tenzij je zelf net thuiskomt.
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: device
+    type: opened
+    device_id: d28f50445143ca051b8decec28f4e567
+    entity_id: be2c3381f87a28f3f151dc036ced80af
+    domain: binary_sensor
+  - trigger: device
+    type: opened
+    device_id: ccb4f5ba655bd60b37356c0642f648e9
+    entity_id: 64d82573727273b3dcec94379bb94be6
+    domain: binary_sensor
+
+conditions:
+  - condition: time
+    after: "00:45:00"
+    before: "06:00:00"
+
+  # Niemand mag net thuisgekomen zijn. Vervang JOUW_WIFI_NAAM hieronder.
+  - condition: template
+    value_template: >-
+      {%- set wifi = 'JOUW_WIFI_NAAM' -%}
+      {%- set ns = namespace(recent=false) -%}
+      {%- for e in ['device_tracker.iphone_van_mark',
+                    'device_tracker.sophies_iphone'] -%}
+        {%- if is_state(e, 'home')
+               and (now() - states[e].last_changed).total_seconds() < 900 -%}
+          {%- set ns.recent = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- for e in ['sensor.iphone_van_mark_ssid',
+                    'sensor.sophies_iphone_ssid'] -%}
+        {%- if is_state(e, wifi)
+               and (now() - states[e].last_changed).total_seconds() < 900 -%}
+          {%- set ns.recent = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ not ns.recent }}
+
+actions:
+  # Eerst de foto, dan pas herrie — dan staat de indringer nog in beeld.
+  - action: camera.snapshot
+    target:
+      entity_id: camera.camera_achterdeur
+    data:
+      filename: /config/www/snapshots/achterdeur_alarm.jpg
+    continue_on_error: true
+
+  - action: siren.turn_on
+    target:
+      entity_id: siren.sensor_sirene
+
+  - action: light.turn_on
+    target:
+      area_id:
+        - buitenkeuken
+        - tuin
+        - voordeur
+
+  - action: notify.mobile_app_iphone_van_mark
+    data:
+      title: "🚨 Deur open midden in de nacht"
+      message: >-
+        Er is een deur geopend om
+        {{ now().strftime('%H:%M') }}. Sirene en buitenverlichting staan aan.
+      data:
+        image: /local/snapshots/achterdeur_alarm.jpg
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+
+  - delay:
+      minutes: 3
+
+  - action: siren.turn_off
+    target:
+      entity_id: siren.sensor_sirene
