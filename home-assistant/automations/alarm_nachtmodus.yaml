@@ -1,0 +1,60 @@
+# =====================================================================
+# Alarmo nachtmodus — schema
+# ---------------------------------------------------------------------
+# Vervangt de losse automatisering "Achterdeur alarm". Zet Alarmo elke
+# nacht om 00:45 in nachtmodus en om 06:00 weer uit.
+#
+# Nieuwe automatisering aanmaken → drie puntjes → Bewerken in YAML →
+# dit plakken. Daarna "Achterdeur alarm" UITZETTEN (niet verwijderen).
+#
+# BELANGRIJK — de condities zijn geen franje:
+#   * Om 00:45 wordt alleen scherpgesteld als het alarm UIT staat. Sta
+#     je op vakantie met armed_away, dan blijft dat staan; nachtmodus
+#     zou een downgrade zijn.
+#   * Om 06:00 wordt alleen uitgeschakeld als het alarm daadwerkelijk in
+#     NACHTMODUS staat. Anders zou dit je vakantiealarm elke ochtend
+#     netjes uitzetten — precies wat je niet wilt.
+#
+# Zie de README voor welke sensoren je in Alarmo aan de nachtmodus moet
+# koppelen (alleen deuren, geen binnensensoren!).
+# =====================================================================
+
+alias: "Alarm: nachtmodus schema"
+description: >-
+  Zet Alarmo 's nachts in nachtmodus (alleen deursensoren) en 's ochtends
+  weer uit. Vervangt de losse achterdeur-automatisering.
+mode: single
+
+triggers:
+  - trigger: time
+    at: "00:45:00"
+    id: aan
+  - trigger: time
+    at: "06:00:00"
+    id: uit
+
+actions:
+  - choose:
+      # --- 00:45: scherpstellen, maar alleen als het alarm uit staat ---
+      - conditions:
+          - condition: trigger
+            id: aan
+          - condition: state
+            entity_id: alarm_control_panel.alarmo
+            state: disarmed
+        sequence:
+          - action: alarm_control_panel.alarm_arm_night
+            target:
+              entity_id: alarm_control_panel.alarmo
+
+      # --- 06:00: uitzetten, maar alleen de nachtmodus ---
+      - conditions:
+          - condition: trigger
+            id: uit
+          - condition: state
+            entity_id: alarm_control_panel.alarmo
+            state: armed_night
+        sequence:
+          - action: alarm_control_panel.alarm_disarm
+            target:
+              entity_id: alarm_control_panel.alarmo

@@ -183,6 +183,21 @@ automation:
             - light.badkamer
         data:
           brightness_pct: 100
+      # In NACHTMODUS ook de buitenverlichting aan: een deur die om
+      # 03:00 opengaat verdient licht in tuin en voordeur. Bij
+      # armed_away (vakantie) juist niet — daar wegen valse alarmen en
+      # de nachtrust van de buren zwaarder.
+      - if:
+          - condition: template
+            value_template: >-
+              {{ state_attr('alarm_control_panel.alarmo', 'arm_mode') == 'armed_night' }}
+        then:
+          - service: light.turn_on
+            target:
+              area_id:
+                - buitenkeuken
+                - tuin
+                - voordeur
       - service: siren.turn_on
         target:
           entity_id: siren.sensor_sirene
@@ -231,6 +246,13 @@ automation:
             - light.speelhoek
             - light.slaapkamer_3
             - light.badkamer
+      # Ook de buitenverlichting die de nachtmodus mogelijk aanzette.
+      - service: light.turn_off
+        target:
+          area_id:
+            - buitenkeuken
+            - tuin
+            - voordeur
       - service: notify.mobile_app_iphone_van_mark
         data:
           title: "🔄 Alarm gereset"

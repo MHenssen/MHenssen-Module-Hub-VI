@@ -67,6 +67,21 @@ conditions:
       {{ is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM')
          or is_state('sensor.sophies_iphone_ssid', 'JOUW_WIFI_NAAM') }}
 
+  # Er moet ook echt iemand ZOJUIST zijn aangekomen. Zonder deze
+  # conditie zou een wifi-hapering om 03:00 (telefoon valt heel even
+  # weg en komt terug) de nachtmodus stilletjes uitschakelen.
+  - condition: template
+    value_template: >-
+      {%- set ns = namespace(aangekomen=false) -%}
+      {%- for e in ['device_tracker.iphone_van_mark',
+                    'device_tracker.sophies_iphone'] -%}
+        {%- if is_state(e, 'home')
+               and (now() - states[e].last_changed).total_seconds() < 1800 -%}
+          {%- set ns.aangekomen = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.aangekomen }}
+
 actions:
   - action: alarm_control_panel.alarm_disarm
     target:

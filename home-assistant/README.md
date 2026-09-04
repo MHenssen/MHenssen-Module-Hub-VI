@@ -177,3 +177,62 @@ Kijk in de logboekweergave van de lamp (klik de entiteit → Logboek) of hij
 de tuin — een goedkope repeater of een AP buiten lost meer op dan welke
 automatisering ook. Overweeg voor die lampen op termijn Zigbee in plaats van
 Tuya-wifi: lokaal, sneller en zonder cloud die commando's laat vallen.
+
+---
+
+# Alarmo nachtmodus (vervangt "Achterdeur alarm")
+
+De losse automatisering "Achterdeur alarm" is omgezet naar een echte
+Alarmo-modus. Voordeel: één plek voor je sensoren, entry delays die
+werken, en de automatische ontwapening bij thuiskomst werkt er gewoon op.
+
+## 1. Alarmo instellen
+
+**Alarmo → Algemeen → Armed night** (nachtmodus inschakelen als die
+uit staat):
+
+- [ ] **Entry delay: 45–60 seconden.** Je telefoon koppelt pas aan wifi
+      als je binnen bent; die tijd heeft de auto-ontwapening nodig.
+- [ ] **Exit delay: 0.** Er gaat niemand naar buiten om 00:45.
+- [ ] **Trigger time: 3 minuten.**
+
+**Alarmo → Sensoren**, per sensor het vinkje bij *Night*:
+
+- [ ] Voordeursensor (`binary_sensor.contact_sensor_deur`) — **met**
+      entry delay
+- [ ] Achterdeursensor (`binary_sensor.achterdeur_sensor`) — **met**
+      entry delay
+- [ ] **Géén binnensensoren!** Geen PIR's, geen presence sensors. Jullie
+      lopen 's nachts zelf door het huis; de wc-PIR in nachtmodus is een
+      gegarandeerd vals alarm.
+
+## 2. Automatiseringen
+
+| Automatisering | Rol |
+|---|---|
+| `Alarm: nachtmodus schema` | 00:45 aan, 06:00 uit — nieuw, plakken |
+| `Alarm: automatisch uit bij thuiskomst` | ontwapent bij aankomst |
+| `Alarm – Alarmo afgegaan` (package) | sirene, licht, melding met foto |
+| `Alarm – automatische reset` (package) | ruimt op na afloop |
+| ~~`Achterdeur alarm`~~ | **uitzetten** — vervangen |
+
+Het schema stelt om 00:45 alleen scherp als het alarm *uit* staat, en
+zet om 06:00 alleen de *nachtmodus* uit. Zo blijft je vakantiealarm
+(`armed_away`) tijdens je afwezigheid gewoon staan.
+
+Nieuw in `vakantie.yaml`: gaat het alarm af in **nachtmodus**, dan gaat
+naast de binnenverlichting ook de buitenverlichting aan (tuin, voordeur,
+buitenkeuken) — bij een deur die 's nachts opengaat wil je licht buiten.
+Bij `armed_away` gebeurt dat bewust niet, om de buren niet te wekken bij
+een vals alarm. De reset zet beide weer uit.
+
+## 3. Testen
+
+Doe dit één keer 's avonds vóór 00:45:
+
+1. Zet Alarmo handmatig in **nachtmodus** via de app.
+2. Open de achterdeur → Alarmo gaat naar `pending` (aftellen).
+3. Wacht de entry delay uit → sirene, buitenlicht, melding met foto.
+4. Ontwapen in de app → sirene en licht gaan uit, "🔄 Alarm gereset".
+5. Zet Alarmo weer uit en de automatisering "Achterdeur alarm" op
+   *uitgeschakeld*.
