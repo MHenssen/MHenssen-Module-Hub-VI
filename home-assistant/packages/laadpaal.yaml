@@ -1,0 +1,216 @@
+# =====================================================================
+# Laadpaal — automatische bestuurdersherkenning en kWh-administratie
+# ---------------------------------------------------------------------
+# Kopieer naar /config/packages/laadpaal.yaml en herlaad de YAML.
+#
+# WAT DIT WEL EN NIET DOET
+#
+# WEL: bijhouden wie er heeft geladen en hoeveel, zonder tag. Bij elke
+#      sessie raadt HA de bestuurder en stuurt een melding met twee
+#      knoppen om te corrigeren. Aan het eind van de maand krijg je de
+#      verdeling Mark / Sophie in kWh en euro's.
+#
+# NIET: de sessie in de Easee-cloud aan een gebruiker koppelen. Dat kan
+#       alleen met een RFID-tag. Gebruik je de Easee-rapportage voor een
+#       werkgeversvergoeding, blijf dan de tag gebruiken — deze
+#       administratie staat los daarvan.
+#
+# VOORWAARDE: zet in de Easee-app de toegang op "Open" (geen autorisatie
+# vereist), anders begint de sessie sowieso niet zonder tag.
+#
+# BETROUWBAARDER MAKEN: installeer de BMW-integratie
+# (Instellingen → Integratie toevoegen → "BMW Connected Drive") en voor
+# de Q4 via HACS "Volkswagen We Connect ID". Vervang daarna de
+# herkenning hieronder door de laadkabelstatus van de auto zelf; dat is
+# waterdicht in plaats van een gok. Zie de README.
+# =====================================================================
+
+input_select:
+  laadpaal_bestuurder:
+    name: Laadpaal bestuurder
+    icon: mdi:account-question
+    options:
+      - Mark
+      - Sophie
+      - Onbekend
+
+input_number:
+  laadkwh_mark:
+    name: Geladen kWh Mark (deze maand)
+    icon: mdi:car-electric
+    min: 0
+    max: 10000
+    step: 0.01
+    unit_of_measurement: kWh
+    mode: box
+  laadkwh_sophie:
+    name: Geladen kWh Sophie (deze maand)
+    icon: mdi:car-electric
+    min: 0
+    max: 10000
+    step: 0.01
+    unit_of_measurement: kWh
+    mode: box
+
+automation:
+  # -------------------------------------------------------------------
+  # 1. Kabel erin → wie is dit?
+  # De Easee gaat van "disconnected" naar iets anders zodra de kabel
+  # wordt aangesloten. Degene die als laatste thuiskwam is vrijwel altijd
+  # degene die nu z'n auto aansluit.
+  # -------------------------------------------------------------------
+  - id: laadpaal_bestuurder_herkennen
+    alias: "Laadpaal: bestuurder herkennen"
+    triggers:
+      - trigger: state
+        entity_id: sensor.emcxmf2k_status
+        from: disconnected
+    conditions:
+      # Niet reageren op statuswisselingen binnen een lopende sessie.
+      - condition: template
+        value_template: "{{ trigger.to_state.state not in ['unknown', 'unavailable'] }}"
+    actions:
+      - variables:
+          # Hoe lang geleden kwam ieder thuis? Wie het kortst geleden
+          # arriveerde, staat nu bij de paal.
+          mark_sinds: >-
+            {{ (now() - states.device_tracker.iphone_van_mark.last_changed).total_seconds()
+               if is_state('device_tracker.iphone_van_mark', 'home') else 999999 }}
+          sophie_sinds: >-
+            {{ (now() - states.device_tracker.sophies_iphone.last_changed).total_seconds()
+               if is_state('device_tracker.sophies_iphone', 'home') else 999999 }}
+          gok: >-
+            {% if mark_sinds < 900 and mark_sinds <= sophie_sinds %}Mark
+            {% elif sophie_sinds < 900 %}Sophie
+            {% else %}Onbekend{% endif %}
+
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.laadpaal_bestuurder
+        data:
+          option: "{{ gok | trim }}"
+
+      # Melding met correctieknoppen. Klopt de gok, dan doe je niets.
+      - action: notify.mobile_app_iphone_van_mark
+        data:
+          title: "🔌 Auto aangesloten"
+          message: >-
+            {% if gok | trim == 'Onbekend' %}
+              Wie laadt er? Niemand kwam net thuis.
+            {% else %}
+              Geboekt op {{ gok | trim }}. Klopt dat niet? Kies hieronder.
+            {% endif %}
+          data:
+            push:
+              interruption-level: passive
+            actions:
+              - action: "LAAD_MARK"
+                title: "Mark (iX3)"
+              - action: "LAAD_SOPHIE"
+                title: "Sophie (Q4)"
+
+  # -------------------------------------------------------------------
+  # 2. Correctie via de knoppen in de melding
+  # -------------------------------------------------------------------
+  - id: laadpaal_bestuurder_corrigeren
+    alias: "Laadpaal: bestuurder corrigeren"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: LAAD_MARK
+        id: mark
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: LAAD_SOPHIE
+        id: sophie
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.laadpaal_bestuurder
+        data:
+          option: "{{ 'Mark' if trigger.id == 'mark' else 'Sophie' }}"
+
+  # -------------------------------------------------------------------
+  # 3. Sessie klaar → kWh bijschrijven op de juiste naam
+  # Let op: de sessieteller van de Easee wordt bij de vólgende sessie
+  # gereset, dus we lezen hem op het moment van loskoppelen.
+  # -------------------------------------------------------------------
+  - id: laadpaal_sessie_boeken
+    alias: "Laadpaal: sessie bijschrijven"
+    triggers:
+      - trigger: state
+        entity_id: sensor.emcxmf2k_status
+        to: disconnected
+    conditions:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: input_select.laadpaal_bestuurder
+            state: Onbekend
+      - condition: numeric_state
+        entity_id: sensor.emcxmf2k_sessie_energie
+        above: 0.1
+    actions:
+      - variables:
+          kwh: "{{ states('sensor.emcxmf2k_sessie_energie') | float(0) }}"
+          wie: "{{ states('input_select.laadpaal_bestuurder') }}"
+          teller: >-
+            {{ 'input_number.laadkwh_mark' if wie == 'Mark'
+               else 'input_number.laadkwh_sophie' }}
+
+      - action: input_number.set_value
+        target:
+          entity_id: "{{ teller }}"
+        data:
+          value: "{{ (states(teller) | float(0) + kwh) | round(2) }}"
+
+      - action: notify.mobile_app_iphone_van_mark
+        data:
+          title: "🔋 Laadsessie afgerond"
+          message: >-
+            {{ wie }}: {{ kwh | round(1) }} kWh geladen
+            (kosten deze sessie ± €{{ (kwh *
+               states('sensor.anwb_account_actuele_elektriciteitsprijs')
+               | float(0.25)) | round(2) }}).
+            Maandtotaal {{ wie }}: {{ (states(teller) | float(0) + kwh) | round(1) }} kWh.
+          data:
+            push:
+              interruption-level: passive
+
+      # Terug naar onbekend, zodat een volgende sessie niet per ongeluk
+      # op de vorige bestuurder wordt geboekt.
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.laadpaal_bestuurder
+        data:
+          option: Onbekend
+
+  # -------------------------------------------------------------------
+  # 4. Maandoverzicht op de 1e van de maand + tellers op nul
+  # -------------------------------------------------------------------
+  - id: laadpaal_maandrapport
+    alias: "Laadpaal: maandrapport"
+    triggers:
+      - trigger: time
+        at: "08:00:00"
+    conditions:
+      - condition: template
+        value_template: "{{ now().day == 1 }}"
+    actions:
+      - action: notify.mobile_app_iphone_van_mark
+        data:
+          title: "⚡ Laadoverzicht vorige maand"
+          message: >-
+            Mark (iX3): {{ states('input_number.laadkwh_mark') | float(0) | round(1) }} kWh ·
+            Sophie (Q4): {{ states('input_number.laadkwh_sophie') | float(0) | round(1) }} kWh ·
+            Totaal: {{ (states('input_number.laadkwh_mark') | float(0)
+                      + states('input_number.laadkwh_sophie') | float(0)) | round(1) }} kWh
+      - action: input_number.set_value
+        target:
+          entity_id:
+            - input_number.laadkwh_mark
+            - input_number.laadkwh_sophie
+        data:
+          value: 0

@@ -236,3 +236,68 @@ Doe dit één keer 's avonds vóór 00:45:
 4. Ontwapen in de app → sirene en licht gaan uit, "🔄 Alarm gereset".
 5. Zet Alarmo weer uit en de automatisering "Achterdeur alarm" op
    *uitgeschakeld*.
+
+---
+
+# Laadpaal zonder tag (`packages/laadpaal.yaml`)
+
+## De harde grens
+
+De Easee Home **kan een auto niet zelf herkennen**. De techniek die dat doet —
+ISO 15118 "Plug & Charge", waarbij auto en paal elkaar over de kabel
+authenticeren — zit er niet in, en Autocharge (herkenning op MAC-adres van de
+auto) ook niet. De RFID-tag *is* de identificatie. Er bestaat dus geen
+HA-truc die de sessie in de Easee-cloud alsnog aan de juiste gebruiker hangt.
+
+**Gebruik je de Easee-rapportage voor een werkgeversvergoeding of
+leasedeclaratie? Blijf dan de tag gebruiken.** Die administratie is dan het
+hele doel en die kun je niet vanuit HA namaken.
+
+Gaat het om je eigen inzicht in wie hoeveel laadt, dan neemt dit pakket die
+administratie over.
+
+## Instellen
+
+1. **Easee-app → charger → Toegang → "Open"** (geen autorisatie vereist).
+   Vanaf nu is kabel erin genoeg om te starten.
+2. Kopieer `packages/laadpaal.yaml` naar `/config/packages/` en herlaad de
+   YAML-configuratie.
+3. Zet `input_select.laadpaal_bestuurder` en de twee kWh-tellers op je
+   dashboard.
+
+## Hoe de herkenning werkt
+
+Bij twee auto's is "wie kwam er als laatste thuis" een verrassend
+betrouwbaar signaal: degene wiens telefoon in de afgelopen 15 minuten in de
+thuiszone aankwam, is degene die nu z'n kabel inprikt. Klopt de gok niet, dan
+corrigeer je met één tik op de melding ("Mark (iX3)" / "Sophie (Q4)").
+
+| Automatisering | Rol |
+|---|---|
+| `Laadpaal: bestuurder herkennen` | kabel erin → gok + melding met knoppen |
+| `Laadpaal: bestuurder corrigeren` | verwerkt de knop uit die melding |
+| `Laadpaal: sessie bijschrijven` | kabel eruit → kWh op de juiste teller |
+| `Laadpaal: maandrapport` | 1e van de maand: verdeling + tellers op nul |
+
+## Waterdicht maken (aanrader)
+
+Vervang de gok door de auto zelf te vragen:
+
+1. **Instellingen → Integratie toevoegen → "BMW Connected Drive"** met je
+   My BMW-account. Je krijgt onder meer een sensor die meldt of de laadkabel
+   is aangesloten.
+2. Voor de Q4 via HACS: **"Volkswagen We Connect ID"** met het MyAudi-account.
+3. Vervang daarna in `Laadpaal: bestuurder herkennen` de variabele `gok` door
+   een controle op die twee sensoren: meldt de iX3 "kabel verbonden", dan is
+   het Mark; meldt de Q4 dat, dan is het Sophie.
+
+Dan is het geen inschatting meer maar een feit — en werkt het ook als jij de
+auto van je vrouw aan de lader hangt.
+
+## Slimmer laden per auto (volgende stap)
+
+Zodra HA weet welke auto er hangt, kun je per auto een ander laadbeleid
+draaien: de auto die pas overmorgen weg hoeft alleen laten laden op
+zonne-overschot (`switch.qperez56_overschot_laden`), en de auto van morgen
+gewoon in de goedkoopste nachturen volgens `sensor.energyzero_today_energy_*`.
+Vraag erom als je dat wilt bouwen.
