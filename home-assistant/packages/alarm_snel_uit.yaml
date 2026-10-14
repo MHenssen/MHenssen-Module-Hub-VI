@@ -1,0 +1,165 @@
+# =====================================================================
+# Alarm snel uitzetten + waarschuwing tijdens het aftellen
+# ---------------------------------------------------------------------
+# Kopieer naar /config/packages/alarm_snel_uit.yaml en herlaad de YAML.
+#
+# Drie manieren om het alarm uit te zetten als je zelf binnenkomt:
+#   1. LANG drukken (±1 sec) op de UIT-knop (onderste knop) van een van
+#      de twee Hue-afstandsbedieningen.
+#   2. Op "Alarm uit" tikken in de melding die je telefoon krijgt zodra
+#      het aftellen begint (vraagt Face ID — veilig in je broekzak).
+#   3. Gewoon thuiskomen: de automatische ontwapening.
+#
+# En: zodra Alarmo begint af te tellen, kleurt de entreelamp ROOD. Wie
+# binnenkomt ziet dus meteen dat er iets moet gebeuren. Na uitzetten
+# kort GROEN, daarna terug zoals hij was.
+#
+# CONTROLEER:
+#   * notify.mobile_app_sophies_iphone — zoek in Ontwikkelaarshulpmiddelen
+#     → Acties op "mobile_app" hoe Sophies telefoon heet. Dit is de enige
+#     melding die óók naar Sophie gaat: zij moet het alarm kunnen
+#     uitzetten als ze 's nachts alleen thuiskomt.
+#   * Zijn de Hue-knoppen anders genummerd? Kijk in Ontwikkelaars-
+#     hulpmiddelen → Statussen naar event.hue_dimmer_switch_1_button_4
+#     en druk lang op de knop; het event_type moet "long_press" worden.
+# =====================================================================
+
+automation:
+  # -------------------------------------------------------------------
+  # 1. Hue-afstandsbediening: lang drukken op UIT = alarm uit
+  # Bewust LANG drukken, zodat een gewone klik (licht uit) het alarm niet
+  # per ongeluk uitschakelt.
+  # -------------------------------------------------------------------
+  - id: alarm_uit_hue_knop
+    alias: "Alarm: uit via Hue-knop (lang drukken)"
+    triggers:
+      - trigger: state
+        entity_id:
+          - event.hue_dimmer_switch_1_button_4
+          - event.hue_dimmer_switch_2_button_4
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.to_state is not none
+             and trigger.to_state.attributes.get('event_type') == 'long_press' }}
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state:
+          - armed_away
+          - armed_home
+          - armed_night
+          - armed_vacation
+          - arming
+          - pending
+          - triggered
+    actions:
+      - action: alarm_control_panel.alarm_disarm
+        target:
+          entity_id: alarm_control_panel.alarmo
+        # data:
+        #   code: "1234"
+      - action: notify.mobile_app_iphone_van_mark
+        data:
+          title: "🔓 Alarm uitgezet met Hue-knop"
+          message: "Om {{ now().strftime('%H:%M') }} via de afstandsbediening."
+          data:
+            push:
+              interruption-level: passive
+    mode: single
+    max_exceeded: silent
+
+  # -------------------------------------------------------------------
+  # 2. Aftellen begint → entreelamp rood + melding met uitknop
+  # -------------------------------------------------------------------
+  - id: alarm_aftellen_waarschuwing
+    alias: "Alarm: waarschuwing tijdens aftellen"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.alarmo
+        to: pending
+    actions:
+      # Huidige stand van de entreelamp onthouden, zodat we hem straks
+      # precies terug kunnen zetten.
+      - action: scene.create
+        data:
+          scene_id: entree_voor_alarm
+          snapshot_entities:
+            - light.yeelight_color_0x801146e
+      - action: light.turn_on
+        target:
+          entity_id: light.yeelight_color_0x801146e
+        data:
+          rgb_color: [255, 0, 0]
+          brightness_pct: 100
+
+      # Melding met knop naar beide telefoons. "authenticationRequired"
+      # betekent: Face ID nodig — een gevonden telefoon kan het alarm dus
+      # niet uitzetten.
+      - action: notify.mobile_app_iphone_van_mark
+        continue_on_error: true
+        data: &aftel_melding
+          title: "⏳ Alarm telt af!"
+          message: >-
+            Deur open terwijl het alarm aan staat. Tik op "Alarm uit" of
+            druk lang op de uit-knop van de Hue-afstandsbediening.
+          data:
+            push:
+              interruption-level: time-sensitive
+            actions:
+              - action: ALARM_UIT
+                title: "Alarm uit"
+                authenticationRequired: true
+                destructive: true
+      - action: notify.mobile_app_sophies_iphone
+        continue_on_error: true
+        data: *aftel_melding
+    mode: single
+
+  # -------------------------------------------------------------------
+  # 3. Knop "Alarm uit" in de melding
+  # -------------------------------------------------------------------
+  - id: alarm_uit_via_melding
+    alias: "Alarm: uit via melding"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: ALARM_UIT
+    actions:
+      - action: alarm_control_panel.alarm_disarm
+        target:
+          entity_id: alarm_control_panel.alarmo
+        # data:
+        #   code: "1234"
+
+  # -------------------------------------------------------------------
+  # 4. Aftellen voorbij → entreelamp terug
+  # Uitgezet: eerst 3 seconden groen als bevestiging.
+  # Alarm afgegaan: de alarm-automatisering neemt het licht over; wij
+  # zetten de entree alleen terug.
+  # -------------------------------------------------------------------
+  - id: alarm_aftellen_einde
+    alias: "Alarm: entreelamp terugzetten"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.alarmo
+        from: pending
+    actions:
+      - if:
+          - condition: state
+            entity_id: alarm_control_panel.alarmo
+            state: disarmed
+        then:
+          - action: light.turn_on
+            target:
+              entity_id: light.yeelight_color_0x801146e
+            data:
+              rgb_color: [0, 255, 0]
+              brightness_pct: 100
+          - delay:
+              seconds: 3
+      - action: scene.turn_on
+        target:
+          entity_id: scene.entree_voor_alarm
+        continue_on_error: true
+    mode: single

@@ -301,3 +301,33 @@ draaien: de auto die pas overmorgen weg hoeft alleen laten laden op
 zonne-overschot (`switch.qperez56_overschot_laden`), en de auto van morgen
 gewoon in de goedkoopste nachturen volgens `sensor.energyzero_today_energy_*`.
 Vraag erom als je dat wilt bouwen.
+
+---
+
+# Alarm: minder vals alarm bij thuiskomst + snel uitzetten
+
+## Automatische ontwapening v2 (`automations/alarm_auto_uit.yaml`)
+
+Versie 1 eiste GPS-thuis én wifi. 's Nachts meldt een iPhone zijn locatie
+vaak te laat, waardoor de deur al open was voordat HA wist dat iemand thuis
+was. Nu is GPS **of** wifi genoeg, mits de telefoon minstens 10 minuten weg
+was. Korte haperingen van een telefoon die gewoon thuis ligt, schakelen het
+alarm dus niet uit; een echte thuiskomst wel.
+
+## Snel uitzetten (`packages/alarm_snel_uit.yaml`)
+
+- **Lang drukken op de uit-knop** van een Hue-afstandsbediening → alarm uit.
+- Zodra Alarmo **aftelt**: entreelamp rood + melding op beide telefoons met
+  knop **"Alarm uit"** (Face ID vereist).
+- Na uitzetten: entreelamp 3 s groen, daarna terug zoals hij was.
+
+## Alarmo-instellingen (nachtmodus)
+
+- Entry delay **90 seconden** (was 45–60).
+- Controleer dat deur-sensoren in nachtmodus op *entry delay* staan, niet
+  *instant*.
+
+## Controleren op beide iPhones
+
+Instellingen → Home Assistant → Locatie → **Altijd** en **Nauwkeurige
+locatie** aan. Controleer in HA `sensor.sophies_iphone_location_permission`.

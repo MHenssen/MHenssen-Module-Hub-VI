@@ -1,42 +1,39 @@
 # =====================================================================
-# Alarm automatisch uit bij thuiskomst
+# Alarm automatisch uit bij thuiskomst — versie 2
 # ---------------------------------------------------------------------
-# Nieuwe automatisering: Instellingen → Automatiseringen & scènes →
-# "+ Automatisering aanmaken" → "Nieuwe automatisering" → rechtsboven
-# drie puntjes → "Bewerken in YAML" → alles selecteren → dit plakken.
+# Plakken over "Alarm: automatisch uit bij thuiskomst" (drie puntjes →
+# Bewerken in YAML → Ctrl+A → plakken → Opslaan).
 #
-# EENMALIG INVULLEN: vervang JOUW_WIFI_NAAM (staat 2x hieronder in de
-# conditie) door de naam van je thuisnetwerk. Die vind je in
-# Ontwikkelaarshulpmiddelen → Statussen → sensor.iphone_van_mark_ssid,
-# terwijl je thuis bent.
+# EENMALIG INVULLEN: vervang JOUW_WIFI_NAAM (2x).
 #
-# WAAROM ZOWEL GPS ALS WIFI:
-# Alleen op GPS afgaan is riskant — locaties verspringen soms tientallen
-# meters en dan schakelt je alarm zichzelf uit terwijl je er niet bent.
-# Daarom is verbinding met je eigen wifi verplicht: dat kan alleen als de
-# telefoon fysiek binnen bereik is én het wachtwoord kent. GPS is de
-# trigger, wifi is het bewijs.
+# WAT ER IS VERANDERD T.O.V. VERSIE 1
+# Versie 1 eiste GPS-thuis ÉN wifi tegelijk. 's Nachts meldt een iPhone
+# zijn locatie vaak te laat, dus stond de deur al open voordat HA wist
+# dat je thuis was. Nu is ELK van beide signalen genoeg, mits het een
+# echte thuiskomst is: de telefoon moet minstens 10 minuten ervoor weg
+# zijn geweest (buiten de thuiszone, of niet op de thuiswifi).
+#
+# Waarom die 10 minuten: een telefoon die gewoon thuis op het
+# nachtkastje ligt, valt soms een paar seconden van de wifi of zijn
+# GPS-positie verspringt even. Zulke haperingen duren seconden, geen
+# tien minuten — dus die schakelen het alarm niet uit. Een echte
+# thuiskomst wel.
 # =====================================================================
 
 alias: "Alarm: automatisch uit bij thuiskomst"
 description: >-
-  Schakelt Alarmo uit zodra Mark of Sophie thuiskomt, mits de telefoon
-  ook daadwerkelijk op het thuisnetwerk zit.
+  Schakelt Alarmo uit zodra Mark of Sophie echt thuiskomt (GPS of wifi,
+  na minstens 10 minuten afwezigheid).
 mode: single
 max_exceeded: silent
 
 triggers:
-  # GPS: iemand komt de zone "thuis" binnen (gebeurt meestal al een
-  # stukje voor de voordeur, dus vóór het openen van de deur).
   - trigger: state
     entity_id:
       - device_tracker.iphone_van_mark
       - device_tracker.sophies_iphone
     to: home
     id: gps
-
-  # Wifi: vangnet als GPS traag is. De telefoon koppelt binnen enkele
-  # seconden na binnenkomst aan het netwerk.
   - trigger: state
     entity_id:
       - sensor.iphone_van_mark_ssid
@@ -45,10 +42,6 @@ triggers:
     id: wifi
 
 conditions:
-  # Alleen iets doen als het alarm daadwerkelijk scherp staat. "pending"
-  # is de entry delay (het aftellen na het openen van de deur) en
-  # "triggered" betekent dat de sirene al loopt — beide willen we juist
-  # afbreken.
   - condition: state
     entity_id: alarm_control_panel.alarmo
     state:
@@ -60,52 +53,28 @@ conditions:
       - pending
       - triggered
 
-  # Het bewijs: minstens één van de twee telefoons hangt op het
-  # thuisnetwerk. Vervang JOUW_WIFI_NAAM hieronder (2x).
+  # Echte thuiskomst: de vorige toestand (weg / andere wifi) moet minstens
+  # 10 minuten hebben geduurd, en mag geen opstart-status van HA zijn.
   - condition: template
     value_template: >-
-      {{ is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM')
-         or is_state('sensor.sophies_iphone_ssid', 'JOUW_WIFI_NAAM') }}
-
-  # Er moet ook echt iemand ZOJUIST zijn aangekomen. Zonder deze
-  # conditie zou een wifi-hapering om 03:00 (telefoon valt heel even
-  # weg en komt terug) de nachtmodus stilletjes uitschakelen.
-  - condition: template
-    value_template: >-
-      {%- set ns = namespace(aangekomen=false) -%}
-      {%- for e in ['device_tracker.iphone_van_mark',
-                    'device_tracker.sophies_iphone'] -%}
-        {%- if is_state(e, 'home')
-               and (now() - states[e].last_changed).total_seconds() < 1800 -%}
-          {%- set ns.aangekomen = true -%}
-        {%- endif -%}
-      {%- endfor -%}
-      {{ ns.aangekomen }}
+      {{ trigger.from_state is not none
+         and trigger.from_state.state not in ['unknown', 'unavailable', 'home', 'JOUW_WIFI_NAAM']
+         and (now() - trigger.from_state.last_changed).total_seconds() > 600 }}
 
 actions:
   - action: alarm_control_panel.alarm_disarm
     target:
       entity_id: alarm_control_panel.alarmo
-    # Zet je later een uitschakelcode aan in Alarmo, haal dan het
-    # commentaar hieronder weg en vul je code in:
+    # Uitschakelcode in Alarmo ingesteld? Haal het commentaar weg:
     # data:
     #   code: "1234"
 
-  # Even melden wie er thuiskwam — zo zie je altijd terug waarom het
-  # alarm uitging, en merk je meteen als het onterecht gebeurt.
   - action: notify.mobile_app_iphone_van_mark
     data:
       title: "🔓 Alarm automatisch uit"
       message: >-
-        {% if is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM')
-              and is_state('sensor.sophies_iphone_ssid', 'JOUW_WIFI_NAAM') %}
-          Mark en Sophie zijn thuis.
-        {% elif is_state('sensor.iphone_van_mark_ssid', 'JOUW_WIFI_NAAM') %}
-          Mark is thuisgekomen.
-        {% else %}
-          Sophie is thuisgekomen.
-        {% endif %}
-        Welkom thuis!
+        {{ 'Mark' if 'iphone_van_mark' in trigger.entity_id else 'Sophie' }}
+        is thuisgekomen ({{ 'GPS' if trigger.id == 'gps' else 'wifi' }}).
       data:
         push:
           interruption-level: passive
