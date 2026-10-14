@@ -331,3 +331,37 @@ alarm dus niet uit; een echte thuiskomst wel.
 
 Instellingen → Home Assistant → Locatie → **Altijd** en **Nauwkeurige
 locatie** aan. Controleer in HA `sensor.sophies_iphone_location_permission`.
+
+---
+
+# NFC-stickers: muziek en TV met je telefoon (`packages/nfc.yaml`)
+
+HomePod-achtige "handoff": houd je iPhone tegen een sticker bij een speaker en
+de Spotify-muziek die op je telefoon speelt, gaat daar verder (zelfde
+nummer, zelfde seconde). Nog een keer tikken = terug naar de iPhone. Een
+sticker bij de TV zet Ziggo + Philips TV + Bose aan, of alles uit.
+
+## Stickers
+
+- Koop **NTAG215**-stickers (een paar euro voor tien). Op metaal (achterkant
+  TV) heb je **anti-metaal**-stickers nodig, anders lezen ze niet.
+- HA-app → Instellingen → **Tags** → *Tag toevoegen* met ID `nfc_keuken`,
+  `nfc_woonkamer`, `nfc_tuin`, `nfc_tuinhuis` of `nfc_tv` → *Tag schrijven*.
+
+## Direct uitvoeren zonder tik (aanrader)
+
+Standaard toont iOS bij het scannen een melding waar je nog op moet tikken.
+Zonder die tik:
+
+1. **Opdrachten**-app → Automatisering → **+** → **NFC** → scan de sticker.
+2. Kies **Direct uitvoeren** (en zet "Melding bij uitvoeren" uit).
+3. Actie: **Home Assistant → Fire Event**, event type `tag_scanned`,
+   event data `{"tag_id": "nfc_keuken"}` (het ID van die sticker).
+
+## Controleren
+
+- Spotify-namen in `source_list` van `media_player.spotify_mark` (ook de
+  naam van je iPhone, standaard "iPhone van Mark").
+- **Bose:** de acties voor aan/uit staan als placeholder in
+  `script.tv_setup_aan_uit`. Zet **EasyLink (HDMI-CEC)** aan op de Philips:
+  vaak gaan TV en Bose dan vanzelf mee aan als de Ziggo-box aangaat.

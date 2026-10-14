@@ -1,0 +1,197 @@
+# =====================================================================
+# NFC-stickers: "telefoon tegen de speaker = muziek daar"
+#               en "telefoon tegen de TV-sticker = TV-setup aan/uit"
+# ---------------------------------------------------------------------
+# Kopieer naar /config/packages/nfc.yaml en herlaad de YAML.
+#
+# STICKERS AANMAKEN (per plek één):
+#   HA-app op je iPhone → Instellingen → Tags → "+ Tag toevoegen".
+#   Geef als Tag-ID precies de naam uit de tabel hieronder (nfc_keuken,
+#   nfc_tv, ...). Kun je het ID niet zelf kiezen, kopieer dan het
+#   gegenereerde ID naar de lijst "plekken" hieronder.
+#   Daarna in de app: tag openen → "Tag schrijven" → telefoon tegen de
+#   sticker houden.
+#
+# WAT ER GEBEURT BIJ EEN SPEAKER-STICKER:
+#   * Speelt Spotify op je iPhone → muziek springt naar die speaker en
+#     gaat verder waar hij was.
+#   * Speelt er niets → de fallback-playlist start op die speaker.
+#   * Speelt de muziek al op díe speaker → hij gaat terug naar je
+#     iPhone. Net als bij een HomePod.
+#
+# CONTROLEER EENMALIG de Spotify-namen: Ontwikkelaarshulpmiddelen →
+# Statussen → media_player.spotify_mark → attribuut "source_list"
+# (open eerst Spotify op je iPhone en speel iets af op elke speaker,
+# anders staan ze er niet in).
+#
+# LET OP: dit werkt met MARKS Spotify-account (media_player.spotify_mark).
+# Wil Sophie het ook met haar eigen account, dan moet haar Spotify als
+# tweede account aan de Spotify-integratie worden toegevoegd.
+# =====================================================================
+
+script:
+  # -------------------------------------------------------------------
+  # Spotify verplaatsen naar een speaker (of terug naar de iPhone)
+  # -------------------------------------------------------------------
+  spotify_naar_speaker:
+    alias: Spotify – naar speaker (NFC)
+    icon: mdi:cast-audio
+    mode: single
+    fields:
+      bron:
+        description: Naam van de speaker zoals Spotify hem kent (source_list)
+        example: Keuken
+      cast_entity:
+        description: Chromecast-entiteit van die speaker (om hem te wekken)
+        example: media_player.chromecastaudio1336
+    sequence:
+      - variables:
+          spotify: media_player.spotify_mark
+          iphone_bron: "iPhone van Mark"   # exact zoals in source_list!
+          fallback_playlist: "spotify:playlist:37i9dQZF1E8HrWDdQkYjQi"  # Banana Pancakes Radio
+
+      # Speelt het al op deze speaker? Dan terug naar de iPhone.
+      - if:
+          - condition: template
+            value_template: >-
+              {{ is_state(spotify, 'playing')
+                 and state_attr(spotify, 'source') == bron }}
+        then:
+          - action: media_player.select_source
+            target:
+              entity_id: "{{ spotify }}"
+            data:
+              source: "{{ iphone_bron }}"
+          - stop: "Terug naar iPhone"
+
+      # Speaker wekken; een slapende Chromecast is onzichtbaar voor Spotify.
+      - action: media_player.turn_on
+        target:
+          entity_id: "{{ cast_entity }}"
+        continue_on_error: true
+      - delay:
+          seconds: 3
+
+      - if:
+          - condition: template
+            value_template: "{{ is_state(spotify, 'playing') }}"
+        then:
+          # Lopende muziek overzetten — gaat verder op dezelfde seconde.
+          - action: media_player.select_source
+            target:
+              entity_id: "{{ spotify }}"
+            data:
+              source: "{{ bron }}"
+        else:
+          # Niets aan het spelen: fallback-playlist starten op de speaker.
+          - action: media_player.select_source
+            target:
+              entity_id: "{{ spotify }}"
+            data:
+              source: "{{ bron }}"
+            continue_on_error: true
+          - delay:
+              seconds: 2
+          - action: media_player.play_media
+            target:
+              entity_id: "{{ spotify }}"
+            data:
+              media_content_type: playlist
+              media_content_id: "{{ fallback_playlist }}"
+
+      # Controle: mislukt → melding met de speakers die Spotify wél ziet.
+      - delay:
+          seconds: 5
+      - if:
+          - condition: template
+            value_template: >-
+              {{ not is_state(spotify, 'playing')
+                 or state_attr(spotify, 'source') != bron }}
+        then:
+          - action: notify.mobile_app_iphone_van_mark
+            data:
+              title: "🎵 Overzetten naar {{ bron }} mislukt"
+              message: >-
+                Spotify ziet nu: {{ state_attr(spotify, 'source_list')
+                | default(['(geen)'], true) | join(', ') }}
+
+  # -------------------------------------------------------------------
+  # TV-setup aan/uit: Ziggo + Philips TV + Bose
+  # -------------------------------------------------------------------
+  tv_setup_aan_uit:
+    alias: TV-setup aan/uit (NFC)
+    icon: mdi:television
+    mode: single
+    sequence:
+      - if:
+          # TV staat aan → alles uit
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: media_player.50pus6704_12
+                state:
+                  - "off"
+                  - unavailable
+                  - unknown
+        then:
+          - action: media_player.turn_off
+            target:
+              entity_id:
+                - media_player.mediabox_2
+                - media_player.50pus6704_12
+            continue_on_error: true
+          # --- BOSE UIT: plak hier jouw actie (zie README) ---
+        else:
+          # Eerst de Ziggo-box: met EasyLink (HDMI-CEC) aan op de TV
+          # maakt die de TV en de Bose vaak al zelf wakker.
+          - action: media_player.turn_on
+            target:
+              entity_id: media_player.mediabox_2
+            continue_on_error: true
+          - action: media_player.turn_on
+            target:
+              entity_id: media_player.50pus6704_12
+            continue_on_error: true
+          # --- BOSE AAN: plak hier jouw actie (zie README) ---
+
+automation:
+  # -------------------------------------------------------------------
+  # Eén automatisering voor alle stickers.
+  # Nieuwe speaker erbij? Alleen een regel toevoegen aan "plekken".
+  # -------------------------------------------------------------------
+  - id: nfc_stickers
+    alias: "NFC: sticker gescand"
+    triggers:
+      - trigger: event
+        event_type: tag_scanned
+    actions:
+      - variables:
+          tag: "{{ trigger.event.data.tag_id }}"
+          plekken:
+            nfc_keuken:
+              bron: "Keuken"
+              cast: media_player.chromecastaudio1336
+            nfc_woonkamer:
+              bron: "Living Room speaker"
+              cast: media_player.living_room_speaker
+            nfc_tuin:
+              bron: "Nest"
+              cast: media_player.nest_audio
+            nfc_tuinhuis:
+              bron: "Tuinhuis"
+              cast: media_player.olivier_kamer
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ tag == 'nfc_tv' }}"
+            sequence:
+              - action: script.tv_setup_aan_uit
+          - conditions:
+              - condition: template
+                value_template: "{{ tag in plekken }}"
+            sequence:
+              - action: script.spotify_naar_speaker
+                data:
+                  bron: "{{ plekken[tag].bron }}"
+                  cast_entity: "{{ plekken[tag].cast }}"
+    mode: queued
