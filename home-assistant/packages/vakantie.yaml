@@ -205,8 +205,12 @@ automation:
         data:
           title: "🚨 ALARM THUIS"
           message: >-
-            Alarmo is afgegaan!
-            Sensor(en): {{ state_attr('alarm_control_panel.alarmo', 'open_sensors') or 'onbekend' }}
+            Alarmo is afgegaan om {{ now().strftime('%H:%M') }}!
+            Sensor(en): {{ state_attr('alarm_control_panel.alarmo', 'open_sensors') or 'onbekend' }} ·
+            Modus: {{ state_attr('alarm_control_panel.alarmo', 'arm_mode') or 'onbekend' }} ·
+            Scherpgezet door: {{ state_attr('alarm_control_panel.alarmo', 'changed_by') or 'automatisering/app' }} ·
+            Mark: {{ states('device_tracker.iphone_van_mark') }},
+            Sophie: {{ states('device_tracker.sophies_iphone') }}
           data:
             image: /local/snapshots/alarm_achterdeur.jpg
             push:

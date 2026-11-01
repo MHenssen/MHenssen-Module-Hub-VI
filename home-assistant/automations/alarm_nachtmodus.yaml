@@ -1,33 +1,50 @@
 # =====================================================================
-# Alarmo nachtmodus — schema
+# Alarmo nachtmodus — versie 2: pas scherp als IEDEREEN thuis is
 # ---------------------------------------------------------------------
-# Vervangt de losse automatisering "Achterdeur alarm". Zet Alarmo elke
-# nacht om 00:45 in nachtmodus en om 06:00 weer uit.
+# Plakken over "Alarm: nachtmodus schema" (drie puntjes → Bewerken in
+# YAML → Ctrl+A → plakken → Opslaan).
 #
-# Nieuwe automatisering aanmaken → drie puntjes → Bewerken in YAML →
-# dit plakken. Daarna "Achterdeur alarm" UITZETTEN (niet verwijderen).
+# WAT ER IS VERANDERD
+# Versie 1 stelde om 00:45 scherp, ook als iemand nog onderweg was. Die
+# persoon kwam dan thuis in een scherp huis, en dan moest de automatische
+# ontwapening het opnemen tegen een trage GPS. Dat ging soms mis.
 #
-# BELANGRIJK — de condities zijn geen franje:
-#   * Om 00:45 wordt alleen scherpgesteld als het alarm UIT staat. Sta
-#     je op vakantie met armed_away, dan blijft dat staan; nachtmodus
-#     zou een downgrade zijn.
-#   * Om 06:00 wordt alleen uitgeschakeld als het alarm daadwerkelijk in
-#     NACHTMODUS staat. Anders zou dit je vakantiealarm elke ochtend
-#     netjes uitzetten — precies wat je niet wilt.
+# Nu wordt de nachtmodus pas ingeschakeld als Mark én Sophie thuis zijn:
+#   * om 00:45 als iedereen er al is;
+#   * anders 5 minuten nadat de laatste thuiskomt (tot 05:00). Die 5
+#     minuten zijn om binnen te komen, deur dicht, jas uit.
+# Wie laat thuiskomt, komt dus binnen in een huis waar het alarm nog
+# NIET aan staat. Geen race tegen de GPS meer.
 #
-# Zie de README voor welke sensoren je in Alarmo aan de nachtmodus moet
-# koppelen (alleen deuren, geen binnensensoren!).
+# AFWEGING: is een van jullie laat weg, dan is degene die thuis slaapt
+# tot de ander terugkomt niet door de nachtmodus beschermd. Wil je dat
+# anders, zeg het dan, dan maak ik er een variant van.
+#
+# De condities blijven:
+#   * Alleen scherpstellen als het alarm UIT staat (vakantie = armed_away
+#     blijft staan).
+#   * Om 06:00 alleen de NACHTMODUS uitzetten.
 # =====================================================================
 
 alias: "Alarm: nachtmodus schema"
 description: >-
-  Zet Alarmo 's nachts in nachtmodus (alleen deursensoren) en 's ochtends
-  weer uit. Vervangt de losse achterdeur-automatisering.
+  Zet Alarmo 's nachts in nachtmodus zodra iedereen thuis is (vanaf 00:45)
+  en om 06:00 weer uit.
 mode: single
+max_exceeded: silent
 
 triggers:
   - trigger: time
     at: "00:45:00"
+    id: aan
+  # De laatste komt thuis → 5 minuten later scherpstellen.
+  - trigger: state
+    entity_id:
+      - device_tracker.iphone_van_mark
+      - device_tracker.sophies_iphone
+    to: home
+    for:
+      minutes: 5
     id: aan
   - trigger: time
     at: "06:00:00"
@@ -35,17 +52,32 @@ triggers:
 
 actions:
   - choose:
-      # --- 00:45: scherpstellen, maar alleen als het alarm uit staat ---
+      # --- scherpstellen: na 00:45, vóór 05:00, iedereen thuis, alarm uit
       - conditions:
           - condition: trigger
             id: aan
+          - condition: time
+            after: "00:45:00"
+            before: "05:00:00"
           - condition: state
             entity_id: alarm_control_panel.alarmo
             state: disarmed
+          - condition: state
+            entity_id:
+              - device_tracker.iphone_van_mark
+              - device_tracker.sophies_iphone
+            state: home
         sequence:
           - action: alarm_control_panel.alarm_arm_night
             target:
               entity_id: alarm_control_panel.alarmo
+          - action: notify.mobile_app_iphone_van_mark
+            data:
+              title: "🌙 Nachtalarm aan"
+              message: "Iedereen thuis — nachtmodus ingeschakeld om {{ now().strftime('%H:%M') }}."
+              data:
+                push:
+                  interruption-level: passive
 
       # --- 06:00: uitzetten, maar alleen de nachtmodus ---
       - conditions:

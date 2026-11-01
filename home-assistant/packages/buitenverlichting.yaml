@@ -24,6 +24,12 @@ script:
     alias: Buitenlampen – gegarandeerd uit
     icon: mdi:lightbulb-off-outline
     mode: single
+    fields:
+      melden:
+        description: >-
+          Stuur een melding met welke lampen aan stonden en sinds wanneer
+          (gebruikt door de bewaker).
+        default: false
     sequence:
       - variables:
           buitenlampen:
@@ -73,6 +79,26 @@ script:
                  | selectattr('state', 'eq', 'on') | list | count == 0 }}
         then:
           - stop: "Alle buitenverlichting staat al uit"
+
+      # Diagnose vóór het uitzetten: welke lampen, en sinds wanneer?
+      # Gingen ze allemaal op hetzelfde moment aan, dan is dat een
+      # stroomhapering of een herverbinding van de Tuya-cloud.
+      - if:
+          - condition: template
+            value_template: "{{ melden | default(false) }}"
+        then:
+          - action: notify.mobile_app_iphone_van_mark
+            data:
+              title: "🛡️ Bewaker zette buitenlicht uit"
+              message: >-
+                {% for l in (expand(buitenlampen) + expand(buitenschakelaars))
+                            | selectattr('state', 'eq', 'on') | list -%}
+                  {{ l.name }} (aan sinds {{ as_local(l.last_changed).strftime('%H:%M') }})
+                  {{- ', ' if not loop.last }}
+                {%- endfor %}
+              data:
+                push:
+                  interruption-level: passive
 
       - repeat:
           sequence:
@@ -140,7 +166,73 @@ script:
                 push:
                   interruption-level: passive   # geen geluid 's nachts
 
+input_boolean:
+  # Noodrem voor de bewaker: aan = de bewaker laat de buitenlampen met
+  # rust (bijv. om 05:00 vertrekken naar Schiphol en licht nodig).
+  # Gaat om 12:00 vanzelf weer uit.
+  buitenlampen_bewaker_pauze:
+    name: Buitenlampen-bewaker pauzeren
+    icon: mdi:shield-off-outline
+
 automation:
+  # -------------------------------------------------------------------
+  # BEWAKER — de structurele oplossing
+  # Tussen 03:00 en 12:00 elke 10 minuten: staat er buitenlicht aan, dan
+  # gaat het uit. Vangt alles wat de vaste tijdstippen mist:
+  #   * lampen die tijdens de controle onbereikbaar waren (Tuya-cloud
+  #     even weg) en daarna brandend terugkwamen;
+  #   * lampen die na een stroomhapering vanzelf aangaan (standaard-
+  #     gedrag van Tuya-lampen);
+  #   * timers/scènes in de Smart Life- of LSC-app die buiten HA om
+  #     lampen aanzetten.
+  # Het script stopt direct als alles al uit staat, dus 10 minuten pollen
+  # kost niets.
+  # -------------------------------------------------------------------
+  - id: buitenlampen_bewaker
+    alias: "Buitenlampen: bewaker (03:00–12:00)"
+    triggers:
+      - trigger: time_pattern
+        minutes: "/10"
+    conditions:
+      - condition: time
+        after: "03:00:00"
+        before: "12:00:00"
+      - condition: state
+        entity_id: input_boolean.buitenlampen_bewaker_pauze
+        state: "off"
+      # Niet ingrijpen tijdens een alarm of rookmelding: dan staat het
+      # buitenlicht juist bewust aan.
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: alarm_control_panel.alarmo
+            state:
+              - pending
+              - triggered
+      - condition: state
+        entity_id:
+          - binary_sensor.rookmelder_rook
+          - binary_sensor.rookmelder
+        state: "off"
+    actions:
+      # "melden: true" = laat weten welke lampen er aan stonden en sinds
+      # wanneer. Dat is de diagnose: zie README.
+      - action: script.buitenlampen_gegarandeerd_uit
+        data:
+          melden: true
+    mode: single
+    max_exceeded: silent
+
+  - id: buitenlampen_bewaker_pauze_reset
+    alias: "Buitenlampen: bewaker-pauze terugzetten"
+    triggers:
+      - trigger: time
+        at: "12:00:00"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.buitenlampen_bewaker_pauze
+
   # -------------------------------------------------------------------
   # Schema — zelfde tijden als voorheen:
   # zondag t/m donderdag 00:30, vrijdag/zaterdag 01:30
@@ -187,25 +279,6 @@ automation:
       - action: script.buitenlampen_gegarandeerd_uit
     mode: single
 
-  # -------------------------------------------------------------------
-  # Watchdog / harde deadline
-  #  - 03:00  : gaat sowieso uit, óók als de muziek nog speelt
-  #  - 04:00 en vóór zonsopkomst: vangnet voor lampen die eerder
-  #    offline waren en later alsnog brandend online kwamen
-  # -------------------------------------------------------------------
-  - id: buitenlampen_watchdog
-    alias: "Buitenlampen: watchdog (nachtcontrole)"
-    triggers:
-      - trigger: time
-        at: "03:00:00"
-      - trigger: time
-        at: "04:00:00"
-      - trigger: sun
-        event: sunrise
-        offset: "-00:30:00"
-    # Geen condities nodig: het script stopt zelf meteen als alles al
-    # uit staat. Zo staat de lampenlijst maar op één plek.
-    actions:
-      - action: script.buitenlampen_gegarandeerd_uit
-    mode: single
-    max_exceeded: silent
+  # (De oude watchdog van 03:00 / 04:00 / zonsopkomst is vervangen door
+  #  de bewaker hierboven: die begint om 03:00 en is dus ook de harde
+  #  deadline als er muziek speelt.)

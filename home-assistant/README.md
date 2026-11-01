@@ -136,11 +136,28 @@ Twee automatiseringen roepen dat script aan:
 | Automatisering | Wanneer |
 |---|---|
 | `Buitenlampen: automatisch uit (schema)` | zo–do 00:30, vr/za 01:30 (jouw oude tijden) — **tenzij er muziek speelt** |
-| `Buitenlampen: watchdog (nachtcontrole)` | 03:00 (harde deadline), 04:00 en een half uur vóór zonsopkomst |
+| `Buitenlampen: bewaker (03:00–12:00)` | elke 10 minuten — ook de harde deadline van 03:00 |
 
-De watchdog vangt precies de lampen die tijdens het schematijdstip offline
-waren. Staat alles al uit, dan stopt het script direct — geen onnodig
-cloudverkeer.
+De **bewaker** vervangt de oude watchdog op vaste tijden. Die miste hele
+groepen lampen die *ná* de laatste controle aangingen: na een stroomhapering
+(Tuya-lampen gaan standaard aan als de stroom terugkomt), na een
+herverbinding van de Tuya-cloud, of door een timer in de Smart Life/LSC-app.
+Staat alles al uit, dan stopt het script direct — geen onnodig cloudverkeer.
+
+Grijpt de bewaker in, dan krijg je een stille melding met welke lampen aan
+stonden en **sinds wanneer**. Staan ze allemaal op hetzelfde tijdstip, dan
+weet je de oorzaak:
+
+- **Allemaal hetzelfde tijdstip, midden in de nacht** → stroomhapering of
+  Tuya-herverbinding. Zet in de LSC/Smart Life-app bij elke buitenlamp het
+  gedrag na stroomuitval op **"Uit"** of **"Laatste status"**. Kijk ook naar
+  `sensor.p1_meter_stroomstoringen_gedetecteerd`.
+- **Elke dag hetzelfde tijdstip** → een timer of scène in de app. Haal die
+  weg; HA hoort de baas te zijn.
+
+Moet het buitenlicht een keer 's ochtends aan blijven (vroeg vertrek),
+zet dan **`input_boolean.buitenlampen_bewaker_pauze`** aan. Die gaat om 12:00
+vanzelf uit.
 
 ## Muziek = feestje bezig
 
@@ -365,3 +382,19 @@ Zonder die tik:
 - **Bose:** de acties voor aan/uit staan als placeholder in
   `script.tv_setup_aan_uit`. Zet **EasyLink (HDMI-CEC)** aan op de Philips:
   vaak gaan TV en Bose dan vanzelf mee aan als de Ziggo-box aangaat.
+
+---
+
+# Nachtalarm v2: pas scherp als iedereen thuis is
+
+`automations/alarm_nachtmodus.yaml` stelt de nachtmodus niet meer blind om
+00:45 in. Hij wacht tot **Mark én Sophie thuis** zijn: om 00:45 als iedereen
+er is, anders 5 minuten na de laatste thuiskomst (tot 05:00). Wie laat
+thuiskomt, loopt dus een huis binnen waar het alarm nog niet aan staat.
+
+Afweging: zolang een van jullie weg is, is de ander 's nachts niet door de
+nachtmodus beschermd.
+
+De alarmmelding laat nu ook zien: modus, wie scherpstelde, en waar beide
+telefoons op dat moment volgens HA waren — zo is elke volgende keer direct
+te verklaren.
