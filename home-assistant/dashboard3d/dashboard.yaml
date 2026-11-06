@@ -1,0 +1,69 @@
+# Voorbeeld-dashboard voor de huiskaart (Instellingen > Dashboards > nieuw
+# dashboard > ⋮ > Raw-configuratie-editor, en dit plakken).
+# Eerst: bestanden naar /config/www/dashboard3d/ en de resource toevoegen
+# (zie README, "3D-dashboard").
+#
+# NOG INVULLEN: de twee sensoren voor het actuele vermogen (net_nu, zon_nu)
+# en de person-entities. Ze staan hieronder met een ? erachter.
+title: Huis
+views:
+  - title: Huis
+    path: huis
+    type: panel
+    cards:
+      - type: custom:huis-dashboard-card
+        titel: Thuis
+        start: achter            # achter | voor | begane_grond | eerste_verdieping | zolder | 3d
+        entities:
+          weer: weather.forecast_thuis
+          net_nu: sensor.p1_meter_vermogen            # ? W, negatief = teruglevering
+          zon_nu: sensor.solaredge_huidig_vermogen    # ? W
+          verbruik_vandaag: sensor.p1_meter_stroomverbruik_vandaag
+          zon_vandaag: sensor.solaredge_opwek_van_vandaag
+          laadpaal_status: sensor.emcxmf2k_status
+          laadpaal_sessie: sensor.emcxmf2k_sessie_energie
+          prijs: sensor.anwb_account_actuele_elektriciteitsprijs
+        # "Nu thuis": verschijnt alleen als er iets actief is
+        meldingen:
+          - entity: alarm_control_panel.alarmo
+            states: [triggered]
+            titel: ALARM gaat af
+            icoon: "🚨"
+            kleur: rood
+          - entity: alarm_control_panel.alarmo
+            states: [armed_away, armed_night, armed_vacation]
+            titel: Alarm staat aan
+            icoon: "🛡️"
+            kleur: groen
+          - entity: binary_sensor.achterdeur_sensor
+            titel: Achterdeur open
+            icoon: "🚪"
+            kleur: warm
+          - entity: binary_sensor.contact_sensor_deur
+            titel: Voordeur open
+            icoon: "🚪"
+            kleur: warm
+          - entity: binary_sensor.rookmelder_rook
+            titel: Rookmelder gaat af
+            icoon: "🔥"
+            kleur: rood
+          - entity: binary_sensor.backups_stale
+            titel: Back-up te oud
+            sub: controleer de HA-back-ups
+            icoon: "💾"
+            kleur: rood
+          - entity: input_boolean.vakantiemodus
+            titel: Vakantiemodus aan
+            icoon: "🧳"
+            kleur: groen
+          - entity: sensor.emcxmf2k_status
+            states: [charging]
+            titel: Auto laadt
+            icoon: "🔌"
+            kleur: groen
+        personen: [person.mark, person.sophie, person.olivier, person.floris]   # ?
+        deuren:
+          - entity: binary_sensor.contact_sensor_deur
+            naam: Voordeur
+          - entity: binary_sensor.achterdeur_sensor
+            naam: Achterdeur

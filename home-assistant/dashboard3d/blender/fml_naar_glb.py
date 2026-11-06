@@ -330,9 +330,23 @@ def build_items(design, base, parents, mats, level, meubels=True):
         obj["kamer"] = room
         obj["verdieping"] = level
         obj["fp_guid"] = it.get("guid", "")
-        obj["entity_id"] = ""  # later koppelen aan light.xxx
+        obj["groep"] = nearest_group(obj.location, GROEPEN.get(f"v{level}", {}))
         link(obj, parents["lampen"])
     return len(lamps), pv, furn
+
+
+GROEPEN = {}
+
+
+def nearest_group(loc, groepen, straal=0.6):
+    """Lampgroep (uit groepen.json) waar deze lamp het dichtst bij hangt."""
+    best, bd = "", straal
+    for g, posities in groepen.items():
+        for x, y in posities:
+            d = ((loc.x - x) ** 2 + (loc.y - y) ** 2) ** 0.5
+            if d < bd:
+                best, bd = g, d
+    return best
 
 
 def level_height(design, default=2.8):
@@ -348,7 +362,11 @@ def main(argv):
     ap.add_argument("--blend")
     ap.add_argument("--geen-meubels", action="store_true")
     ap.add_argument("--hoogtes", help="vaste verdiepingshoogtes in m, bv. 2.97,2.8")
+    ap.add_argument("--groepen", help="groepen.json met lampgroep-posities per verdieping")
     args = ap.parse_args(argv)
+    if args.groepen:
+        with open(args.groepen, encoding="utf-8") as f:
+            GROEPEN.update(json.load(f))
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     mats = {
@@ -387,10 +405,10 @@ def main(argv):
     # lampenlijst om straks aan Home Assistant-entities te koppelen
     csv_path = os.path.splitext(os.path.abspath(args.uit))[0] + "_lampen.csv"
     with open(csv_path, "w", encoding="utf-8") as f:
-        f.write("object;verdieping;kamer;entity_id\n")
+        f.write("object;verdieping;kamer;groep\n")
         for obj in sorted(bpy.data.objects, key=lambda o: o.name):
             if obj.name.startswith("lamp_"):
-                f.write(f"{obj.name};{obj['verdieping']};{obj['kamer']};\n")
+                f.write(f"{obj.name};{obj['verdieping']};{obj['kamer']};{obj['groep']}\n")
 
     if args.blend:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(args.blend))

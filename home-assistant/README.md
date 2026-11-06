@@ -401,11 +401,70 @@ te verklaren.
 
 ---
 
-# 3D-dashboard (in opbouw)
+# 3D-dashboard (`dashboard3d/`)
 
-Plan: een eigen Lovelace-kaart die een 3D-model van het huis toont, met per
-verdieping de lampen (aan/uit/dimmen), het stroomverbruik en de zonneopbrengst.
-Alles lokaal, geserveerd door Home Assistant zelf. Stap 1, het 3D-model, is klaar.
+Een eigen Lovelace-kaart (`custom:huis-dashboard-card`) in de stijl van het
+Homey-voorbeelddashboard. Hij toont:
+
+- een bovenbalk met het weer, het goedkoopste stroomuur, de klok en "Live"
+- tegels voor het net nu, het verbruik van het huis, de zon nu, de laadpaal en de stroomprijs
+- in het midden fotorealistische renders van het huis: Achter, Voor, en per
+  verdieping met het plafond eraf. Lampen die aan zijn, geven echt licht op
+  de foto, en hoe fel hangt af van de helderheid. Tik op een 💡 om de groep te schakelen.
+- "Nu thuis" met alleen de meldingen die nu actief zijn
+- rechts een kamerpaneel met per lamp een schakelaar en een dimmer
+- onderaan wie er thuis is en of de deuren open of dicht zijn
+- een 3D-knop met een vrij draaibaar model (three.js, meegeleverd en niet van internet)
+
+Alles draait lokaal: de bestanden staan in `/config/www/dashboard3d/` en
+Home Assistant serveert ze zelf.
+
+Onbereikbare lampen (`unavailable`/`unknown`) toont de kaart als "onbekend",
+nooit als "uit". De kaart schakelt ze ook niet: de knop is uitgegrijsd.
+
+## Installeren
+
+1. Pak `dashboard3d.zip` (uit de projectbestanden) uit naar
+   `/config/www/dashboard3d/`. Dat kan met de Samba-add-on, of met File editor
+   of Studio Code Server (uploaden). Daarin horen `huis-dashboard-card.js`,
+   `verdiepingen.json`, `huis.glb`, `renders/` en `vendor/`.
+2. Ga naar Instellingen > Dashboards > ⋮ > Resources > Resource toevoegen:
+   URL `/local/dashboard3d/huis-dashboard-card.js?v=1`, type "JavaScript-module".
+   Verhoog `?v=` na elke update, anders houdt de browser de oude versie vast.
+3. Maak een nieuw dashboard en plak `dashboard3d/dashboard.yaml` in de
+   Raw-configuratie-editor. Vul daarin de sensoren met een `?` in.
+
+## Wat de bestanden doen
+
+| Bestand | Doel |
+|---|---|
+| `www/huis-dashboard-card.js` | de kaart zelf |
+| `lampgroepen.yaml` | welke `light.*` bij welke lampgroep op de render hoort (`bediening` = wat de kaart schakelt) |
+| `dashboard.yaml` | voorbeeldconfiguratie van het dashboard |
+| `blender/render_lampgroepen.py` | Cycles-renders per weergave: `_dag`, `_basis` (avond, lampen uit) en één lichtlaag per groep |
+| `blender/dashcam.py` | de gedeelde camera, zodat de klikpunten precies op de render vallen |
+| `blender/hotspots.py` | rekent per groep en per energielabel uit waar het op de render staat (in %) |
+| `blender/maak_verdiepingen_json.py` | voegt alles samen tot `verdiepingen.json` |
+
+Een render duurt in de cloud ongeveer 3 minuten (1600×1067, Cycles). De renders,
+het model en de plattegronden staan bewust niet in deze repo, maar in de
+projectbestanden.
+
+## Nog niet getest (thuis controleren)
+
+- De kaart is getest in een browser met een nagemaakte Home Assistant
+  (Playwright), niet in jouw HA. Controleer of hij laadt nadat je de resource
+  hebt toegevoegd. Check ook of het schakelen en dimmen echt werkt, vooral bij
+  de Tuya-lampen en de lichtgroepen (`light.sweetlampen`, `light.voordeurlampen`, enz.).
+- Controleer of de lichtlagen op de juiste plek vallen. De lampposities komen
+  uit Floorplanner. Welke tuinlamp precies waar hangt, is nog een aanname.
+- De labels "net" en "laadpaal" op Voor staan op een geschatte plek: de
+  meterkast bij de voordeur en de laadpaal op de oprit linksvoor.
+- `net_nu` en `zon_nu` (actueel vermogen in W) zijn nog onbekend. Zonder die
+  twee tonen de tegels "–".
+- "Goedkoopst" verschijnt alleen als de prijssensor een lijst uurprijzen in
+  zijn attributen heeft (`prices`, `forecast` of `today`).
+- Hoe soepel het 3D-model draait, hangt af van de tablet.
 
 ## Model maken uit Floorplanner (`dashboard3d/blender/fml_naar_glb.py`)
 
@@ -435,3 +494,24 @@ Aannames: verdiepingshoogte = meest voorkomende wandhoogte van de verdieping
 eronder (nu 2,97 m en 2,80 m); aan te passen met `--hoogtes 2.97,2.8`.
 De echte Floorplanner-meubelmodellen worden niet gebruikt: die staan op een
 server van Floorplanner, en voor het dashboard is een licht model beter.
+
+## Fotorealistische renders
+
+Voor de renders gebruiken we wél de echte meubels en materialen uit
+Floorplanner, via [fml2blender](https://pypi.org/project/fml2blender/):
+
+```bash
+pip install bpy fml2blender
+fml2blender harvest fp/        # map met de .fml's; haalt modellen op (Floorplanner-domeinen moeten bereikbaar zijn)
+fml2blender build fp/ -o fp_verdieping1.fml.blend   # wij bouwden elke verdieping apart
+# per verdieping (bovenaanzicht, zonder plafond en dak):
+python blender/render_lampgroepen.py -- fp_verdieping1.fml.blend begane_grond groepen.json v1 renders/
+# hele huis van buiten:
+CAMERA=voor EXTRA_BLENDS=fp_verdieping2.fml.blend:fp_verdieping3.fml.blend \
+  python blender/render_lampgroepen.py -- fp_verdieping1.fml.blend voor buiten.json buiten renders/
+python blender/hotspots.py -- fp_verdieping1.fml.blend groepen.json v1 hotspots/ begane_grond
+python blender/maak_verdiepingen_json.py lampgroepen.yaml hotspots/ renders/ www/verdiepingen.json
+```
+
+Haal voor `harvest` eerst items met een `refid` die met `sym-` begint uit de
+`.fml`: die bestaan niet als model. De begane grond bouwen duurt ongeveer 25 minuten.

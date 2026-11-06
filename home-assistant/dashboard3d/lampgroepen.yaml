@@ -1,0 +1,69 @@
+# Lampgroepen voor het 3D-dashboard (concept, 6 nov 2026)
+# Per groep: één render waarin alleen die lampen aan zijn. Het dashboard
+# legt die over de basisrender, met de helderheid van de entity.
+# `bediening` = de entity die de kaart schakelt/dimt (bij voorkeur een HA-groep).
+# `lampen` = de losse lampen (helderheid = gemiddelde van de aan-staande).
+
+begane_grond:
+  woonkamer_plafond:
+    bediening: light.woonkamerlampen
+    lampen: [light.hue_filament_bulb_1, light.hue_filament_bulb_2]
+  woonkamer_sfeer:
+    bediening: light.sweetlampen
+    lampen: [light.floor_lamp, light.hue_go_1, light.yeelight_color_0x7fd8535]
+  tv_ambilight:
+    bediening: light.50pus6704_12_ambilight
+  keuken_tafel:
+    bediening: light.tafellampen
+    lampen: [light.tafellamp, light.tafellamp_2, light.tafellamp_6]
+  keuken_bar:
+    bediening: light.bar_licht
+  leeshoek:
+    bediening: light.leeshoek
+    lampen: [light.leeslamp, light.lsc_moodlight_rgb_cct]
+  speelhoek:
+    bediening: light.speelhoek
+  toilet:
+    bediening: light.shellydimmer2_24d7ebe95104
+  bijkeuken:
+    bediening: light.lsc_smart_10m_ledstrip_rgbic_cct
+  entree:
+    bediening: light.yeelight_color_0x801146e
+    lampen: [light.ganglamp, light.ganglamp_2]
+  voordeur:
+    bediening: light.voordeurlampen
+    lampen: [light.voordeur_lamp_1, light.voordeur_lamp_3, light.voordeur_lamp_4,
+             light.voordeur_lamp_5, light.lsc_smart_gu10, light.floris]
+  overkapping:
+    bediening: light.shellydimmer2_24d7ebe9595b
+    lampen: [light.outdoor_up_down_light_overkapping_3, light.outdoor_up_down_light_overkapping_4,
+             light.outdoor_up_down_light_overkapping_5, light.tuinlamp_overkap]
+  tuin:
+    bediening: light.tuin_verlichting
+    lampen: [light.tuinspots, light.tuinlamp, light.tuinlamp_2,
+             light.outdoor_up_down_light_6, light.outdoor_up_down_light_7]
+  tuin_feest:
+    bediening: light.lsc_party_string_light_rgbic_cct
+  voortuin_slingers:
+    lampen: [light.lsc_garden_spike_eu_stopcontact_1, light.lsc_garden_spike_eu_stopcontact_2]
+  tuinhuis_garage:
+    lampen: [light.lsc_smart_bulb_rgb_cct, light.lsc_smart_gls_a60]
+
+eerste_verdieping:
+  slaapkamer:                 # Mark en Sophie, tegenover de badkamer
+    bediening: light.slaapkamer_3
+    lampen: [light.slaapkamer, light.slaapkamer_2]
+  badkamer:
+    bediening: light.badkamer
+    lampen: [light.badkamer_1, light.badkamer_2, light.badkamer_3,
+             light.badkamer_4, light.badkamer_5, light.badkamer_6]
+  floris:                     # trap op links, naast de badkamer (in Floorplanner 'Kast')
+    bediening: light.floris_2
+  olivier:                    # trap op rechts (in Floorplanner 'Babykamer')
+    lampen: [light.sterlamp_nachtlamp, light.smart_plug_stopcontact_1]
+
+zolder: {}                    # alleen airco, geen lampen; alleen basisrender
+
+# Bewust niet in het dashboard:
+# light.beneden, light.woonkamer, light.sweet_lampen, light.sweet_lampen_2 (groepen/dubbel)
+# light.emcxmf2k_led_strip (laadpaal), camera-indicatorlampjes
