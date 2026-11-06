@@ -398,3 +398,40 @@ nachtmodus beschermd.
 De alarmmelding laat nu ook zien: modus, wie scherpstelde, en waar beide
 telefoons op dat moment volgens HA waren — zo is elke volgende keer direct
 te verklaren.
+
+---
+
+# 3D-dashboard (in opbouw)
+
+Plan: een eigen Lovelace-kaart die een 3D-model van het huis toont, met per
+verdieping de lampen (aan/uit/dimmen), het stroomverbruik en de zonneopbrengst.
+Alles lokaal, geserveerd door Home Assistant zelf. Stap 1, het 3D-model, is klaar.
+
+## Model maken uit Floorplanner (`dashboard3d/blender/fml_naar_glb.py`)
+
+Het script leest de Floorplanner-ontwerpen (`.fml`, één per verdieping) en
+bouwt met Blender een licht model, `huis.glb`:
+
+- muren met uitsparingen voor ramen en deuren, vloeren per kamer
+- lampen als bolletjes met vaste namen (`lamp_v1_01`, ...) plus een
+  `huis_lampen.csv` om ze aan `light.*`-entities te koppelen
+- zonnepanelen (`pv_v2_01`, ...), daken, schoorsteen en terrein
+- binnenmeubels als eenvoudige blokken (bomen, auto's en tuinspullen weggelaten)
+- elke verdieping is een eigen node (`verdieping_1` t/m `verdieping_3`) met
+  groepen `muren`, `vloeren`, `lampen`, `zonnepanelen`, `meubels`, `daken`,
+  `terrein`, zodat het dashboard verdiepingen los kan tonen
+
+```bash
+pip install bpy            # Blender als Python-module, geen installatie van Blender nodig
+python fml_naar_glb.py --uit huis.glb --blend huis.blend \
+    verdieping1.fml verdieping2.fml verdieping3.fml
+```
+
+De `.fml`-bestanden haal je in Floorplanner via de ontwikkelaarstools van de
+browser (Network-tab, filter op `fml`, "Copy response", opslaan als tekst).
+Ze staan bewust niet in deze repo (plattegrond van het huis).
+
+Aannames: verdiepingshoogte = meest voorkomende wandhoogte van de verdieping
+eronder (nu 2,97 m en 2,80 m); aan te passen met `--hoogtes 2.97,2.8`.
+De echte Floorplanner-meubelmodellen worden niet gebruikt: die staan op een
+server van Floorplanner, en voor het dashboard is een licht model beter.
