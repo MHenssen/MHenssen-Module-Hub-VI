@@ -17,6 +17,7 @@ import os
 import sys
 
 import bpy
+from mathutils import Vector
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dashcam import maak_camera, verberg_daken  # noqa: E402
@@ -79,6 +80,27 @@ def groep_van(obj):
 
 
 light_groep = {o.name: groep_van(o) for o in lights}
+
+
+def onder_plaat_zetten():
+    """Floorplanner zet sommige plafondspots ín de dakrand of luifel; dan komt er
+    geen licht uit. Zulke lampen verschuiven we net onder de plaat."""
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    verplaatst = 0
+    for o in lights:
+        if not light_groep[o.name]:
+            continue
+        p = o.matrix_world.translation.copy()
+        start = p - Vector((0, 0, 1.2))
+        geraakt, plek, *_ = sc.ray_cast(dg, start, Vector((0, 0, 1)), distance=1.19)
+        if geraakt and plek.z < p.z - 0.01:
+            o.matrix_world.translation = Vector((p.x, p.y, plek.z - 0.05))
+            verplaatst += 1
+    print("VERPLAATST", verplaatst, flush=True)
+
+
+onder_plaat_zetten()
 emit_groep = [(o, n, s, groep_van(o)) for o, n, s in emitters]
 
 
@@ -128,10 +150,15 @@ def render(bestand):
     print("RENDER", bestand, flush=True)
 
 
-zet(set()); zon.hide_render = False; bg.inputs[1].default_value = 1.0
-render(f"{naam}_dag.jpg")
+ALLEEN_GROEPEN = [g for g in os.environ.get("ALLEEN_GROEPEN", "").split(",") if g]
+if ALLEEN_GROEPEN:  # alleen deze lichtlagen opnieuw renderen
+    groepen = {g: v for g, v in groepen.items() if g in ALLEEN_GROEPEN}
+else:
+    zet(set()); zon.hide_render = False; bg.inputs[1].default_value = 1.0
+    render(f"{naam}_dag.jpg")
 if os.environ.get("ALLEEN_DAG"):  # snelle proef van de camera
     sys.exit(0)
+zon.hide_render = True
 # avond: zwak blauwig maanlicht, zodat het huis nog net zichtbaar is
 zon.hide_render = True; bg.inputs[1].default_value = 0.12
 maan_data = bpy.data.lights.new("maan", "SUN")
@@ -140,9 +167,11 @@ maan_data.color = (0.6, 0.7, 1.0)
 maan = bpy.data.objects.new("maan", maan_data)
 sc.collection.objects.link(maan)
 maan.rotation_euler = (0.9, -0.3, 2.2)
-render(f"{naam}_basis.jpg")
+if not ALLEEN_GROEPEN:
+    render(f"{naam}_basis.jpg")
 maan.hide_render = True
 bg.inputs[1].default_value = 0.0
+donker.inputs[1].default_value = 0.0  # lichtlagen op echt zwart
 for g in groepen:
     zet({g})
     render(f"{naam}_{g}.jpg")

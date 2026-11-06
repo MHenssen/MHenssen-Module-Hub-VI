@@ -518,5 +518,9 @@ python blender/hotspots.py -- fp_verdieping1.fml.blend groepen.json v1 hotspots/
 python blender/maak_verdiepingen_json.py lampgroepen.yaml hotspots/ renders/ www/verdiepingen.json
 ```
 
+Alleen een paar lichtlagen opnieuw renderen: `ALLEEN_GROEPEN=tuin,voordeur`.
+Het script zet plafondspots die Floorplanner ín een dakrand of luifel heeft
+geplaatst automatisch net onder de plaat, anders geven ze geen licht.
+
 Haal voor `harvest` eerst items met een `refid` die met `sym-` begint uit de
 `.fml`: die bestaan niet als model. De begane grond bouwen duurt ongeveer 25 minuten.
