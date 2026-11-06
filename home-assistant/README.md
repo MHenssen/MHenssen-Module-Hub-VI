@@ -458,10 +458,15 @@ projectbestanden.
   de Tuya-lampen en de lichtgroepen (`light.sweetlampen`, `light.voordeurlampen`, enz.).
 - Controleer of de lichtlagen op de juiste plek vallen. De lampposities komen
   uit Floorplanner. Welke tuinlamp precies waar hangt, is nog een aanname.
-- De labels "net" en "laadpaal" op Voor staan op een geschatte plek: de
-  meterkast bij de voordeur en de laadpaal op de oprit linksvoor.
-- `net_nu` en `zon_nu` (actueel vermogen in W) zijn nog onbekend. Zonder die
-  twee tonen de tegels "–".
+- De labels op Voor: "net" bij de meterkast naast de voordeur, en "laadpaal"
+  voor de garagedeur op de oprit links.
+- `net_nu` is `sensor.netto_vermogen_kw`. De kaart rekent kW om naar W.
+  Controleer of negatief echt teruglevering betekent.
+- `zon_nu` (actueel vermogen van de zonnepanelen) is nog een gok:
+  `sensor.solaredge_huidig_vermogen`. Zonder die sensor tonen "Zon nu" en
+  "Verbruik huis" (= net + zon) een "–".
+- Personen: zonder `personen:` toont de kaart alle `person.*` uit HA.
+- Lay-out getest op het formaat van een iPhone 15 Pro, een iPad Air en een laptop.
 - "Goedkoopst" verschijnt alleen als de prijssensor een lijst uurprijzen in
   zijn attributen heeft (`prices`, `forecast` of `today`).
 - Hoe soepel het 3D-model draait, hangt af van de tablet.

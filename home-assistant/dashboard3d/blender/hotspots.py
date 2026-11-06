@@ -46,7 +46,7 @@ for g, posities in groepen.items():
     res[g] = scherm(Vector((x, y, vloer + 1.0)))
 
 # energielabels: zon boven de zonnepanelen, net/laadpaal aan de straatkant, huis in het midden
-mn, mx = huis_bounds()
+mn, mx = huis_bounds(min_x=-30 if CAMERA == "voor" else -6.5)
 mid = (mn + mx) / 2
 pv = [o for o in bpy.data.objects if o.type == "MESH"
       and any(w in o.name.lower() for w in ("solar", "pv", "zonnepan", "paneel"))]

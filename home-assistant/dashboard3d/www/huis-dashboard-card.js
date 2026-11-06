@@ -67,7 +67,9 @@ class HuisDashboardCard extends HTMLElement {
       this.shadowRoot.innerHTML = `<ha-card style="padding:16px">Kan ${url} niet laden: ${e}</ha-card>`;
       return;
     }
-    this._kamer = this._data.kamers[0]?.id;
+    const d = this._data;
+    const start = d.weergaven.find((v) => v.id === this._view);
+    this._kamer = (start?.groepen || []).map((g) => g.kamer).find((id) => d.kamers.some((x) => x.id === id)) || d.kamers[0]?.id;
     this._bouw();
     if (this._hass) this._update();
   }
@@ -82,6 +84,14 @@ class HuisDashboardCard extends HTMLElement {
     if (!s || ONBEKEND.includes(s.state)) return null;
     const v = parseFloat(s.state);
     return isNaN(v) ? null : v;
+  }
+
+  // vermogen altijd in W, ook als de sensor kW geeft (bv. sensor.netto_vermogen_kw)
+  _watt(id) {
+    const v = this._num(id);
+    if (v == null) return null;
+    const eenheid = (this._s(id).attributes.unit_of_measurement || (id.endsWith("_kw") ? "kW" : "W")).toLowerCase();
+    return eenheid === "kw" ? v * 1000 : v;
   }
 
   _f(v, d = 0) {
@@ -142,10 +152,10 @@ class HuisDashboardCard extends HTMLElement {
   .tegel .w small { font-size:13px; font-weight:400; color:var(--sub); } .tegel .s { font-size:12px; }
   .hoofd { display:grid; grid-template-columns: 1fr 300px; gap:12px; }
   @media (max-width: 900px) { .hoofd { grid-template-columns: 1fr; } }
-  .stage { position:relative; border-radius:16px; overflow:hidden; background:#0b0c0e;
-           aspect-ratio:${d.beeld.breedte} / ${d.beeld.hoogte}; }
-  .stage > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-  .stage > img.licht { mix-blend-mode:screen; opacity:0; transition:opacity .5s; pointer-events:none; }
+  .stage { position:relative; border-radius:16px; overflow:hidden; background:#0b0c0e; }
+  .beeld { position:relative; aspect-ratio:${d.beeld.breedte} / ${d.beeld.hoogte}; }
+  .beeld > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .beeld > img.licht { mix-blend-mode:screen; opacity:0; transition:opacity .5s; pointer-events:none; }
   .seg { position:absolute; top:10px; right:10px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; z-index:3; }
   .seg div { display:flex; background:rgba(20,22,26,.85); border:1px solid #2f343c; border-radius:12px; padding:3px; }
   .seg button { background:none; border:0; color:var(--sub); padding:5px 10px; border-radius:9px; font:inherit;
@@ -159,7 +169,7 @@ class HuisDashboardCard extends HTMLElement {
            border:1px solid #39404a; border-radius:12px; padding:4px 10px 4px 8px; font-size:12px; display:flex;
            gap:6px; align-items:center; white-space:nowrap; pointer-events:none; }
   .label b { font-size:14px; } .label small { color:var(--sub); display:block; font-size:10px; }
-  .nuthuis { position:absolute; left:10px; top:10px; width:230px; z-index:3; background:rgba(20,22,26,.88);
+  .nuthuis { position:absolute; left:10px; top:58px; width:230px; z-index:3; background:rgba(20,22,26,.88);
              border:1px solid #2f343c; border-radius:14px; padding:10px; }
   .nuthuis h4 { margin:0 0 8px; font-size:13px; display:flex; justify-content:space-between; }
   .nuthuis h4 span { color:var(--sub); font-weight:400; }
@@ -182,6 +192,17 @@ class HuisDashboardCard extends HTMLElement {
   .persoon .av { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; background:#3a404a; }
   .persoon.thuis .av { background:#e9a23b; color:#2b1a00; } .persoon span { color:var(--sub); display:block; }
   .persoon.thuis span { color:var(--accent); } .persoon.alarm { border-color:#7a3a33; }
+  @media (max-width: 700px) {
+    ha-card { padding:10px; }
+    .tegels { grid-template-columns:repeat(2,1fr); } .tegel .w { font-size:20px; }
+    .stage { display:flex; flex-direction:column; } .seg { order:-1; }
+    .seg { position:static; justify-content:flex-start; padding:8px; overflow-x:auto; flex-wrap:nowrap; }
+    .seg div { flex-shrink:0; }
+    .nuthuis { position:static; width:auto; margin:8px; }
+    .hot { width:30px; height:30px; font-size:13px; }
+    .label { font-size:10px; padding:2px 6px; } .label b { font-size:11px; } .label small { display:none; }
+    .kop .titel span { display:none; } .chip.live { display:none; }
+  }
   #drie { position:absolute; inset:0; z-index:2; display:none; background:#121417; }
   .stage.drie .hot { display:none; }
 </style>
@@ -198,11 +219,13 @@ class HuisDashboardCard extends HTMLElement {
   <div class="tegels"></div>
   <div class="hoofd">
     <div class="stage ${this._view === "3d" ? "drie" : ""}">
+     <div class="beeld">
       <img class="basis" alt="">
       ${(view.groepen || []).filter((g) => g.render).map((g) => `<img class="licht" data-g="${g.id}" src="${p}/renders/${g.render}" alt="">`).join("")}
       ${(view.groepen || []).filter((g) => g.x != null).map((g) => `<div class="hot" data-g="${g.id}" title="${g.naam}" style="left:${g.x}%;top:${g.y}%">💡</div>`).join("")}
       <div class="labels"></div>
       <div id="drie"></div>
+     </div>
       <div class="nuthuis"><h4>Nu thuis <span class="aantal"></span></h4><div class="lijst"></div></div>
       <div class="seg">
         <div>${d.weergaven.map((v) => knop(v.id, v.naam, v.id === this._view, "data-view")).join("")}${knop("3d", "3D", this._view === "3d", "data-view")}</div>
@@ -221,6 +244,10 @@ class HuisDashboardCard extends HTMLElement {
     const r = this.shadowRoot;
     r.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => {
       this._view = b.dataset.view;
+      // kamerpaneel meenemen naar een kamer op deze verdieping
+      const nieuw = d.weergaven.find((v) => v.id === this._view);
+      const k = (nieuw?.groepen || []).map((g) => g.kamer).find((id) => d.kamers.some((x) => x.id === id));
+      if (k) this._kamer = k;
       this._bouw();
       this._update();
     }));
@@ -347,8 +374,8 @@ class HuisDashboardCard extends HTMLElement {
   }
 
   _updateTegels() {
-    const net = this._num(this._cfg("net_nu"));
-    const zon = this._num(this._cfg("zon_nu"));
+    const net = this._watt(this._cfg("net_nu"));
+    const zon = this._watt(this._cfg("zon_nu"));
     const huis = net != null && zon != null ? net + zon : null;
     const laad = this._s(this._cfg("laadpaal_status"));
     const tegel = (l, w, eenheid, s, kleur) =>
@@ -369,8 +396,8 @@ class HuisDashboardCard extends HTMLElement {
       el.innerHTML = "";
       return;
     }
-    const net = this._num(this._cfg("net_nu"));
-    const zon = this._num(this._cfg("zon_nu"));
+    const net = this._watt(this._cfg("net_nu"));
+    const zon = this._watt(this._cfg("zon_nu"));
     const waarden = {
       zon: ["☀︎", `${this._f(zon)} W`, "zonnepanelen"],
       net: ["⚡", `${this._f(net == null ? null : Math.abs(net))} W`, net != null && net < 0 ? "naar het net" : "van het net"],
@@ -427,7 +454,9 @@ class HuisDashboardCard extends HTMLElement {
 
   _updateVoet() {
     const r = this.shadowRoot;
-    const mensen = (this._config.personen || []).map((id) => {
+    // geen lijst ingesteld: alle person.* uit Home Assistant
+    const ids = this._config.personen || Object.keys(this._hass.states).filter((id) => id.startsWith("person.")).sort();
+    const mensen = ids.map((id) => {
       const s = this._s(id);
       const naam = s?.attributes.friendly_name || id.split(".")[1];
       const thuis = s?.state === "home";

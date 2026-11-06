@@ -50,7 +50,8 @@ def _hoeken(mn, mx):
 
 def maak_camera(sc, soort="boven", marge=1.06):
     """Maakt de camera, past hem passend om het huis en geeft (camera_object, vloerhoogte)."""
-    mn, mx = huis_bounds()
+    # Voor: ook de garage links in beeld (daar staat de laadpaal op de oprit)
+    mn, mx = huis_bounds(min_x=-30 if soort == "voor" else -6.5)
     vloer = mn.z
     if soort == "boven":
         mx = Vector((mx.x, mx.y, vloer + 2.6))  # alleen deze verdieping, tot net onder het plafond

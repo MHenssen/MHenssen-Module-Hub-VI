@@ -3,8 +3,8 @@
 # Eerst: bestanden naar /config/www/dashboard3d/ en de resource toevoegen
 # (zie README, "3D-dashboard").
 #
-# NOG INVULLEN: de twee sensoren voor het actuele vermogen (net_nu, zon_nu)
-# en de person-entities. Ze staan hieronder met een ? erachter.
+# NOG CONTROLEREN: zon_nu (actueel vermogen van de zonnepanelen) staat
+# hieronder met een ? erachter.
 title: Huis
 views:
   - title: Huis
@@ -16,8 +16,8 @@ views:
         start: achter            # achter | voor | begane_grond | eerste_verdieping | zolder | 3d
         entities:
           weer: weather.forecast_thuis
-          net_nu: sensor.p1_meter_vermogen            # ? W, negatief = teruglevering
-          zon_nu: sensor.solaredge_huidig_vermogen    # ? W
+          net_nu: sensor.netto_vermogen_kw            # kW of W mag; negatief = teruglevering (controleren)
+          zon_nu: sensor.solaredge_huidig_vermogen    # ? actueel vermogen zonnepanelen
           verbruik_vandaag: sensor.p1_meter_stroomverbruik_vandaag
           zon_vandaag: sensor.solaredge_opwek_van_vandaag
           laadpaal_status: sensor.emcxmf2k_status
@@ -61,7 +61,8 @@ views:
             titel: Auto laadt
             icoon: "🔌"
             kleur: groen
-        personen: [person.mark, person.sophie, person.olivier, person.floris]   # ?
+        # personen: weglaten = alle person.* uit HA. Of zelf kiezen:
+        # personen: [person.mark, person.sophie]
         deuren:
           - entity: binary_sensor.contact_sensor_deur
             naam: Voordeur
