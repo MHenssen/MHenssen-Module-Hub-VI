@@ -398,3 +398,22 @@ nachtmodus beschermd.
 De alarmmelding laat nu ook zien: modus, wie scherpstelde, en waar beide
 telefoons op dat moment volgens HA waren — zo is elke volgende keer direct
 te verklaren.
+
+---
+
+# Wekelijkse check 9 november 2026: twee 'unavailable'-fixes
+
+- **Bewaker buitenlampen** (`packages/buitenverlichting.yaml`): sloeg over
+  zodra een rookmelder `unavailable`/`unknown` was, omdat de conditie
+  "rookmelder = off" eiste. Nu slaat hij alleen over bij échte rook (`on`).
+  Een offline Tuya-rookmelder houdt het buitenlicht dus niet meer de hele
+  ochtend aan.
+- **Hue-knop alarm uit** (`packages/alarm_snel_uit.yaml`): na een
+  herverbinding van de Hue-bridge komt de event-entiteit terug uit
+  `unavailable` met het oude `event_type`. Was dat `long_press`, dan ging het
+  alarm uit zonder dat iemand drukte. Een overgang vanuit `unavailable` telt
+  nu niet meer als druk; de knop zelf werkt gewoon.
+
+Thuis controleren: rookmelder-entiteiten bestaan echt
+(`binary_sensor.rookmelder_rook`, `binary_sensor.rookmelder`), en één keer
+lang drukken op de Hue-uitknop met het alarm in nachtmodus.
