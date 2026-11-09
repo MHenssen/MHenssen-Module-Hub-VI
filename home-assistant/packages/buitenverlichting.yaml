@@ -209,11 +209,17 @@ automation:
             state:
               - pending
               - triggered
-      - condition: state
-        entity_id:
-          - binary_sensor.rookmelder_rook
-          - binary_sensor.rookmelder
-        state: "off"
+      # Alleen overslaan bij échte rook ("on"). Een rookmelder die
+      # unavailable/unknown is (Tuya-cloud weg, batterij) telt NIET als
+      # rook — anders bleef het buitenlicht de hele ochtend aan.
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id:
+              - binary_sensor.rookmelder_rook
+              - binary_sensor.rookmelder
+            state: "on"
+            match: any
     actions:
       # "melden: true" = laat weten welke lampen er aan stonden en sinds
       # wanneer. Dat is de diagnose: zie README.

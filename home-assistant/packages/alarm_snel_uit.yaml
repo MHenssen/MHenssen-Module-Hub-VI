@@ -39,8 +39,16 @@ automation:
           - event.hue_dimmer_switch_2_button_4
     conditions:
       - condition: template
+        # Na een herverbinding van de Hue-bridge komt de event-entiteit
+        # terug uit 'unavailable' met het OUDE event_type. Was dat
+        # long_press, dan zou het alarm zonder knopdruk uitgaan. Daarom
+        # telt een overgang vanuit 'unavailable' niet als druk. (Vanuit
+        # 'unknown' wel, zodat de eerste druk na een herstart werkt.)
         value_template: >-
           {{ trigger.to_state is not none
+             and trigger.to_state.state not in ['unavailable', 'unknown']
+             and (trigger.from_state is none
+                  or trigger.from_state.state != 'unavailable')
              and trigger.to_state.attributes.get('event_type') == 'long_press' }}
       - condition: state
         entity_id: alarm_control_panel.alarmo
