@@ -416,6 +416,23 @@ Homey-voorbeelddashboard. Hij toont:
 - onderaan wie er thuis is en of de deuren open of dicht zijn
 - een 3D-knop met een vrij draaibaar model (three.js, meegeleverd en niet van internet)
 
+Alles is aan te tikken:
+
+| Waar | Tik | Vasthouden (0,5 s) |
+|---|---|---|
+| 💡 op de foto | lamp aan/uit | pop-up met helderheid, kleurtemperatuur, kleur en de losse lampen |
+| naam van een lamp in het kamerpaneel | pop-up van die lamp | |
+| tegel Laadpaal of label 🔌 | pop-up met Start/Pauze/Hervat/Stop, wie er laadt, kWh deze maand, instellingen en details | |
+| tegels Net, Verbruik, Zon, Prijs en de energielabels | HA-venster met de geschiedenis | |
+| "💡 N aan" in de bovenbalk | lijst van alle lampen die aan zijn, met **Alles uit** | |
+| "Alles uit" bij een kamer | alle lampen in die kamer uit | |
+| 🔊 Harman Kardon (keuken) of de scèneknop | scène aan of uit | |
+| weer, personen, deuren, meldingen | HA-venster met details | |
+
+Beneden staat elke lamp los op de foto, net als in de picture-elements-plattegrond:
+tafellampen, bar (ledstrip), sweetlampen, Hue Go, Yeelight, de twee hanglampen,
+leeslamp, moodlight en ambilight. Elke lamp heeft een eigen lichtlaag.
+
 Alles draait lokaal: de bestanden staan in `/config/www/dashboard3d/` en
 Home Assistant serveert ze zelf.
 
@@ -462,9 +479,12 @@ projectbestanden.
   voor de garagedeur op de oprit links.
 - `net_nu` is `sensor.netto_vermogen_kw`. De kaart rekent kW om naar W.
   Controleer of negatief echt teruglevering betekent.
-- `zon_nu` (actueel vermogen van de zonnepanelen) is nog een gok:
-  `sensor.solaredge_huidig_vermogen`. Zonder die sensor tonen "Zon nu" en
-  "Verbruik huis" (= net + zon) een "–".
+- `zon_nu` is `sensor.solaredge_ac_power` (door Mark getest).
+- De laadpaalknoppen roepen `easee.action_command` aan met `charger_id: EMCXMF2K`.
+  Dat is niet getest: controleer of Start, Pauze en Stop echt iets doen. Als dat
+  niet zo is, kijk dan in Ontwikkelhulpmiddelen > Acties hoe de Easee-actie bij jou heet.
+- De plekken van de bar-ledstrip en het ambilight op de foto zijn geschat (de
+  bar langs het keukenblok, het ambilight achter de tv).
 - Personen: zonder `personen:` toont de kaart alle `person.*` uit HA.
 - Lay-out getest op het formaat van een iPhone 15 Pro, een iPad Air en een laptop.
 - "Goedkoopst" verschijnt alleen als de prijssensor een lijst uurprijzen in
@@ -519,6 +539,9 @@ python blender/maak_verdiepingen_json.py lampgroepen.yaml hotspots/ renders/ www
 ```
 
 Alleen een paar lichtlagen opnieuw renderen: `ALLEEN_GROEPEN=tuin,voordeur`.
+In `groepen.json` kan een groep ook `{"posities": [...], "nieuw": [[x, y, z, watt, "kleur"]]}`
+zijn. "nieuw" zet een extra lamp neer die niet in Floorplanner staat, zoals een ledstrip.
+`SAMPLES` (standaard 96) geldt voor de foto's, `SAMPLES_LAAG` voor de lichtlagen.
 Het script zet plafondspots die Floorplanner ín een dakrand of luifel heeft
 geplaatst automatisch net onder de plaat, anders geven ze geen licht.
 

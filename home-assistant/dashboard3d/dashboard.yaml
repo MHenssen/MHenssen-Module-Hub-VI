@@ -3,8 +3,6 @@
 # Eerst: bestanden naar /config/www/dashboard3d/ en de resource toevoegen
 # (zie README, "3D-dashboard").
 #
-# NOG CONTROLEREN: zon_nu (actueel vermogen van de zonnepanelen) staat
-# hieronder met een ? erachter.
 title: Huis
 views:
   - title: Huis
@@ -17,12 +15,18 @@ views:
         entities:
           weer: weather.forecast_thuis
           net_nu: sensor.netto_vermogen_kw            # kW of W mag; negatief = teruglevering (controleren)
-          zon_nu: sensor.solaredge_huidig_vermogen    # ? actueel vermogen zonnepanelen
+          zon_nu: sensor.solaredge_ac_power
           verbruik_vandaag: sensor.p1_meter_stroomverbruik_vandaag
           zon_vandaag: sensor.solaredge_opwek_van_vandaag
           laadpaal_status: sensor.emcxmf2k_status
           laadpaal_sessie: sensor.emcxmf2k_sessie_energie
           prijs: sensor.anwb_account_actuele_elektriciteitsprijs
+        # Tik op de laadpaal-tegel: knoppen Start/Pauze/Hervat/Stop (easee.action_command),
+        # wie er laadt, kWh per persoon deze maand, en alle switch./sensor.emcxmf2k_*-entities.
+        laadpaal:
+          charger_id: EMCXMF2K
+          bestuurder: input_select.laadpaal_bestuurder
+          maand: [input_number.laadkwh_mark, input_number.laadkwh_sophie]
         # "Nu thuis": verschijnt alleen als er iets actief is
         meldingen:
           - entity: alarm_control_panel.alarmo

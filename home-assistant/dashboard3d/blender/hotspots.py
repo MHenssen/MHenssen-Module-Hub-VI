@@ -40,10 +40,19 @@ def scherm(p):
 
 
 res = {}
-for g, posities in groepen.items():
+for g, spec in groepen.items():
+    # spec: [[x, y], ...] of {"posities": [...], "nieuw": [[x, y, z, ...], ...]}
+    posities = spec if isinstance(spec, list) else spec.get("posities", []) + [n[:2] for n in spec.get("nieuw", [])]
+    if not posities:
+        continue
     x = sum(p[0] for p in posities) / len(posities)
     y = sum(p[1] for p in posities) / len(posities)
     res[g] = scherm(Vector((x, y, vloer + 1.0)))
+
+# losse klikpunten zonder lamp (bv. scènes): PLEKKEN=plekken.json {"v1": {"id": [x, y]}}
+if os.environ.get("PLEKKEN"):
+    for g, (x, y) in json.load(open(os.environ["PLEKKEN"])).get(sleutel, {}).items():
+        res[g] = scherm(Vector((x, y, vloer + 1.0)))
 
 # energielabels: zon boven de zonnepanelen, net/laadpaal aan de straatkant, huis in het midden
 mn, mx = huis_bounds(min_x=-30 if CAMERA == "voor" else -6.5)

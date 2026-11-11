@@ -5,40 +5,73 @@
 # `lampen` = de losse lampen (helderheid = gemiddelde van de aan-staande).
 
 begane_grond:
-  woonkamer_plafond:
-    bediening: light.woonkamerlampen
-    lampen: [light.hue_filament_bulb_1, light.hue_filament_bulb_2]
-  woonkamer_sfeer:
-    bediening: light.sweetlampen
-    lampen: [light.floor_lamp, light.hue_go_1, light.yeelight_color_0x7fd8535]
-  tv_ambilight:
-    bediening: light.50pus6704_12_ambilight
+  # per lamp, zoals in Marks picture-elements-plattegrond (nov 2026)
   keuken_tafel:
+    naam: Tafellampen
     bediening: light.tafellampen
     lampen: [light.tafellamp, light.tafellamp_2, light.tafellamp_6]
   keuken_bar:
-    bediening: light.bar_licht
-  leeshoek:
-    bediening: light.leeshoek
-    lampen: [light.leeslamp, light.lsc_moodlight_rgb_cct]
+    naam: Bar
+    bediening: light.bar_licht_2
+    icoon: mdi:led-strip-variant
+  sweetlampen:
+    naam: Sweetlampen
+    bediening: light.sweetlampen
+  hue_go:
+    naam: Hue Go
+    bediening: light.hue_go_1
+  yeelight:
+    naam: Yeelight
+    bediening: light.yeelight_color_0x7fd8535
+  filament_1:
+    naam: Hanglamp 1
+    bediening: light.hue_filament_bulb_1
+    icoon: mdi:globe-light
+  filament_2:
+    naam: Hanglamp 2
+    bediening: light.hue_filament_bulb_2
+    icoon: mdi:globe-light
+  leeslamp:
+    naam: Leeslamp
+    bediening: light.leeslamp
+    icoon: mdi:floor-lamp
+  moodlight:
+    naam: Moodlight
+    bediening: light.lsc_moodlight_rgb_cct
+    icoon: mdi:lamp
+  tv_ambilight:
+    naam: Ambilight
+    bediening: light.50pus6704_12_ambilight
+    icoon: mdi:television-ambient-light
   speelhoek:
+    naam: Speelhoek
     bediening: light.speelhoek
   toilet:
+    naam: Toilet
     bediening: light.shellydimmer2_24d7ebe95104
   bijkeuken:
+    naam: Bijkeuken
     bediening: light.lsc_smart_10m_ledstrip_rgbic_cct
+    icoon: mdi:led-strip-variant
   entree:
+    naam: Entree
     bediening: light.yeelight_color_0x801146e
     lampen: [light.ganglamp, light.ganglamp_2]
   voordeur:
+    naam: Voordeur
+    icoon: mdi:outdoor-lamp
     bediening: light.voordeurlampen
     lampen: [light.voordeur_lamp_1, light.voordeur_lamp_3, light.voordeur_lamp_4,
              light.voordeur_lamp_5, light.lsc_smart_gu10, light.floris]
   overkapping:
+    naam: Overkapping
+    icoon: mdi:ceiling-light-multiple
     bediening: light.shellydimmer2_24d7ebe9595b
     lampen: [light.outdoor_up_down_light_overkapping_3, light.outdoor_up_down_light_overkapping_4,
              light.outdoor_up_down_light_overkapping_5, light.tuinlamp_overkap]
   tuin:
+    naam: Tuin
+    icoon: mdi:outdoor-lamp
     bediening: light.tuin_verlichting
     lampen: [light.tuinspots, light.tuinlamp, light.tuinlamp_2,
              light.outdoor_up_down_light_6, light.outdoor_up_down_light_7]
@@ -62,7 +95,17 @@ eerste_verdieping:
   olivier:                    # trap op rechts (in Floorplanner 'Babykamer')
     lampen: [light.sterlamp_nachtlamp, light.smart_plug_stopcontact_1]
 
-zolder: {}                    # alleen airco, geen lampen; alleen basisrender
+zolder: {}
+
+# Scènes: knoppen op de plattegrond (aan/uit) en in het kamerpaneel
+scenes:
+  harman_kardon:
+    naam: Harman Kardon
+    icoon: mdi:speaker
+    weergave: begane_grond
+    kamer: keuken
+    aan: scene.harman_kardon_aan
+    uit: scene.harman_kardon_uit                    # alleen airco, geen lampen; alleen basisrender
 
 # Bewust niet in het dashboard:
 # light.beneden, light.woonkamer, light.sweet_lampen, light.sweet_lampen_2 (groepen/dubbel)

@@ -127,6 +127,42 @@ class HuisDashboardCard extends HTMLElement {
     return (this._config.entities || {})[k];
   }
 
+  // mdi-icoon via HA's eigen <ha-icon>; buiten HA (test) een emoji
+  _icoon(icon, reserve = "💡") {
+    return customElements.get("ha-icon") ? `<ha-icon icon="${icon}"></ha-icon>` : reserve;
+  }
+
+  // HA's eigen detailvenster (met geschiedenis en alle instellingen)
+  _meerInfo(id) {
+    if (!id) return;
+    this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: id }, bubbles: true, composed: true }));
+  }
+
+  _naam(id) {
+    return this._s(id)?.attributes.friendly_name || id.split(".")[1].replace(/_/g, " ");
+  }
+
+  // tik = schakelen, vasthouden (0,5 s) = details
+  _tikHoud(el, tik, houd) {
+    let t = null;
+    let lang = false;
+    el.addEventListener("pointerdown", () => {
+      lang = false;
+      t = setTimeout(() => { lang = true; houd(); }, 500);
+    });
+    const stop = () => clearTimeout(t);
+    el.addEventListener("pointerup", stop);
+    el.addEventListener("pointerleave", stop);
+    el.addEventListener("contextmenu", (e) => { e.preventDefault(); });
+    el.addEventListener("click", (e) => { e.stopPropagation(); if (!lang) tik(); });
+  }
+
+  _alleLampen() {
+    const ids = [];
+    for (const k of this._data.kamers) for (const id of k.lampen) if (!ids.includes(id)) ids.push(id);
+    return ids;
+  }
+
   // ------------------------------------------------------------ opbouw
   _bouw() {
     const d = this._data;
@@ -204,6 +240,40 @@ class HuisDashboardCard extends HTMLElement {
     .kop .titel span { display:none; } .chip.live { display:none; }
   }
   #drie { position:absolute; inset:0; z-index:2; display:none; background:#121417; }
+  ha-icon { --mdc-icon-size:18px; }
+  .klik { cursor:pointer; transition:transform .12s, border-color .2s; }
+  .klik:hover { border-color:#3d4450; } .klik:active { transform:scale(.97); }
+  .tegel .pijl { float:right; color:var(--sub); font-size:12px; }
+  .label.klik { pointer-events:auto; }
+  .chip.lampen b { color:var(--warm); }
+  .pop { position:fixed; inset:0; z-index:20; background:rgba(5,6,8,.55); display:flex; align-items:center;
+         justify-content:center; padding:16px; backdrop-filter:blur(3px); }
+  .pop[hidden] { display:none; }
+  .vel { background:var(--panel); border:1px solid #2f343c; border-radius:20px; width:min(420px,100%);
+         max-height:90%; overflow:auto; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .vel .velkop { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .vel .velkop h3 { margin:0; font-size:18px; flex:1; } .vel .velkop small { display:block; color:var(--sub); font-weight:400; font-size:12px; }
+  .vel .dicht { background:var(--panel2); border:0; color:var(--tekst); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; }
+  .groot { display:flex; align-items:center; gap:12px; background:var(--panel2); border-radius:14px; padding:14px; margin-bottom:10px; }
+  .groot .wrd { font-size:28px; font-weight:600; } .groot .wrd small { font-size:13px; color:var(--sub); font-weight:400; }
+  .knoppen { display:grid; grid-template-columns:repeat(auto-fit,minmax(80px,1fr)); gap:8px; margin:10px 0; }
+  .knoppen button, .kn { background:var(--panel2); border:1px solid #333944; color:var(--tekst); border-radius:12px;
+         padding:10px 8px; font:inherit; font-size:13px; cursor:pointer; display:flex; flex-direction:column;
+         align-items:center; gap:4px; }
+  .knoppen button:active, .kn:active { transform:scale(.96); }
+  .knoppen button.actief { background:var(--accent); color:#06231d; border-color:var(--accent); }
+  .knoppen button:disabled { opacity:.35; cursor:default; }
+  .kn.rood { border-color:#7a3a33; color:#ffb4aa; } .kn.breed { width:100%; flex-direction:row; justify-content:center; margin-top:10px; }
+  .regel { display:flex; justify-content:space-between; gap:10px; padding:7px 2px; border-bottom:1px solid #2a2f37; font-size:13px; }
+  .regel span:first-child { color:var(--sub); } .regel:last-child { border-bottom:0; }
+  .vel h4 { margin:14px 0 6px; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--sub); }
+  .schuif { width:100%; accent-color:var(--warm); height:28px; }
+  .schuif.kt { accent-color:#ffd9a0; background:linear-gradient(90deg,#ffb35c,#fff4e0,#cfe3ff); border-radius:8px; height:10px; -webkit-appearance:none; appearance:none; }
+  .kleuren { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .kleuren button { width:34px; height:34px; border-radius:50%; border:2px solid #fff3; cursor:pointer; }
+  .hot.scene { background:rgba(46,196,166,.25); border-color:var(--accent); }
+  .scenes { display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 8px; }
+  .alles-uit { margin-left:auto; background:none; border:1px solid #3a3f47; color:var(--sub); border-radius:10px; padding:4px 10px; font:inherit; font-size:12px; cursor:pointer; }
   .stage.drie .hot { display:none; }
 </style>
 <ha-card>
@@ -211,7 +281,8 @@ class HuisDashboardCard extends HTMLElement {
     <div class="chip">🏠</div>
     <div class="titel"><b>${this._config.titel || "Thuis"}</b><span class="datum"></span></div>
     <div class="ruimte"></div>
-    <div class="chip weer"></div>
+    <div class="chip lampen klik"></div>
+    <div class="chip weer klik"></div>
     <div class="chip goedkoop"></div>
     <div class="chip"><span class="klok"></span></div>
     <div class="chip live"><span class="livetxt">Live</span></div>
@@ -222,7 +293,7 @@ class HuisDashboardCard extends HTMLElement {
      <div class="beeld">
       <img class="basis" alt="">
       ${(view.groepen || []).filter((g) => g.render).map((g) => `<img class="licht" data-g="${g.id}" src="${p}/renders/${g.render}" alt="">`).join("")}
-      ${(view.groepen || []).filter((g) => g.x != null).map((g) => `<div class="hot" data-g="${g.id}" title="${g.naam}" style="left:${g.x}%;top:${g.y}%">💡</div>`).join("")}
+      ${(view.groepen || []).filter((g) => g.x != null).map((g) => `<div class="hot ${g.type === "scene" ? "scene" : ""}" data-g="${g.id}" title="${g.naam}" style="left:${g.x}%;top:${g.y}%">${this._icoon(g.icoon || "mdi:lightbulb", g.type === "scene" ? "🔊" : "💡")}</div>`).join("")}
       <div class="labels"></div>
       <div id="drie"></div>
      </div>
@@ -234,12 +305,15 @@ class HuisDashboardCard extends HTMLElement {
       </div>
     </div>
     <div class="paneel">
-      <h3 class="kamernaam"></h3><div class="sub kamersub"></div>
+      <div style="display:flex;align-items:center;gap:8px"><h3 class="kamernaam"></h3><button class="alles-uit" data-actie="kamer-uit">Alles uit</button></div>
+      <div class="sub kamersub"></div>
+      ${(d.scenes || []).length ? `<div class="scenes">${d.scenes.map((sc) => `<button class="kn" data-scene="${sc.id}" style="flex-direction:row;padding:6px 10px">${this._icoon(sc.icoon, "🎵")} ${sc.naam}</button>`).join("")}</div>` : ""}
       <div class="kamers">${d.kamers.map((k) => knop(k.id, k.naam, k.id === this._kamer, "data-kamer")).join("")}</div>
       <div class="rijen"></div>
     </div>
   </div>
   <div class="voet"></div>
+  <div class="pop" hidden><div class="vel"></div></div>
 </ha-card>`;
     const r = this.shadowRoot;
     r.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => {
@@ -267,17 +341,49 @@ class HuisDashboardCard extends HTMLElement {
       this._bouwRijen();
       this._update();
     }));
-    r.querySelectorAll(".hot").forEach((h) => h.addEventListener("click", () => {
+    r.querySelectorAll(".hot").forEach((h) => {
       const g = view.groepen.find((x) => x.id === h.dataset.g);
-      const st = this._lampStatus(this._groepIds(g));
-      if (st.status === "onbekend") return;
-      this._groepIds(g).forEach((id) => this._schakel(id, st.status !== "aan"));
-      if (g.kamer) {
+      const naarKamer = () => {
+        if (!g.kamer || !d.kamers.some((k) => k.id === g.kamer)) return;
         this._kamer = g.kamer;
         r.querySelectorAll("[data-kamer]").forEach((x) => x.classList.toggle("actief", x.dataset.kamer === g.kamer));
         this._bouwRijen();
+      };
+      if (g.type === "scene") {
+        h.addEventListener("click", () => this._open("scene", g));
+        return;
       }
-    }));
+      this._tikHoud(h, () => {
+        const st = this._lampStatus(this._groepIds(g));
+        if (st.status === "onbekend") return;
+        this._groepIds(g).forEach((id) => this._schakel(id, st.status !== "aan"));
+        naarKamer();
+      }, () => this._open("lamp", g));
+    });
+    // klikbare onderdelen
+    r.querySelector(".chip.lampen").addEventListener("click", () => this._open("aan"));
+    r.querySelector(".chip.weer").addEventListener("click", () => this._meerInfo(this._cfg("weer") || "weather.forecast_thuis"));
+    r.querySelector("[data-actie=kamer-uit]").addEventListener("click", () => {
+      const k = d.kamers.find((x) => x.id === this._kamer);
+      (k?.lampen || []).filter((id) => this._s(id)?.state === "on").forEach((id) => this._schakel(id, false));
+    });
+    r.querySelectorAll("[data-scene]").forEach((b) => b.addEventListener("click", () => this._open("scene", d.scenes.find((x) => x.id === b.dataset.scene))));
+    const actie = (a) => (a === "laadpaal" ? this._open("laadpaal") : this._meerInfo(this._cfg(a)));
+    for (const sel of [".tegels", ".labels"]) {
+      r.querySelector(sel).addEventListener("click", (e) => {
+        const el = e.target.closest("[data-actie]");
+        if (el) actie(el.dataset.actie);
+      });
+    }
+    for (const sel of [".voet", ".nuthuis"]) {
+      r.querySelector(sel).addEventListener("click", (e) => {
+        const el = e.target.closest("[data-ent]");
+        if (el) this._meerInfo(el.dataset.ent);
+      });
+    }
+    const pop = r.querySelector(".pop");
+    pop.addEventListener("click", (e) => { if (e.target === pop) this._sluit(); });
+    if (this._pop) this._tekenPop();
     this._bouwRijen();
     if (this._view === "3d") this._start3D();
   }
@@ -293,6 +399,8 @@ class HuisDashboardCard extends HTMLElement {
     r.querySelectorAll(".rij").forEach((rij) => {
       const id = rij.dataset.id;
       rij.querySelector(".tgl").addEventListener("click", () => this._schakel(id, this._s(id)?.state !== "on"));
+      rij.querySelector(".naam").style.cursor = "pointer";
+      rij.querySelector(".naam").addEventListener("click", () => this._open("lamp", { id, naam: this._naam(id), bediening: id, lampen: [] }));
       const slider = rij.querySelector("input");
       slider.addEventListener("change", () => this._schakel(id, true, { brightness_pct: Number(slider.value) }));
     });
@@ -331,6 +439,9 @@ class HuisDashboardCard extends HTMLElement {
     if (blok) gk.innerHTML = `€ <span>Goedkoopst<br><b class="groen">${blok}</b></span>`;
 
     this._updateTegels();
+    const aanIds = this._alleLampen().filter((id) => this._s(id)?.state === "on");
+    r.querySelector(".chip.lampen").innerHTML = `${this._icoon("mdi:lightbulb-group", "💡")} <b>${aanIds.length}</b> aan`;
+    if (this._pop && !this._sleept) this._tekenPop();
     if (view) {
       const basis = r.querySelector("img.basis");
       const src = `${p}/renders/${this._avond() ? view.basis : view.dag}`;
@@ -378,14 +489,14 @@ class HuisDashboardCard extends HTMLElement {
     const zon = this._watt(this._cfg("zon_nu"));
     const huis = net != null && zon != null ? net + zon : null;
     const laad = this._s(this._cfg("laadpaal_status"));
-    const tegel = (l, w, eenheid, s, kleur) =>
-      `<div class="tegel"><div class="l">${l}</div><div class="w">${w} <small>${eenheid}</small></div><div class="s" style="color:${kleur}">${s}</div></div>`;
+    const tegel = (l, w, eenheid, s, kleur, actie) =>
+      `<div class="tegel klik" data-actie="${actie}"><div class="l">${l}<span class="pijl">›</span></div><div class="w">${w} <small>${eenheid}</small></div><div class="s" style="color:${kleur}">${s}</div></div>`;
     this.shadowRoot.querySelector(".tegels").innerHTML = [
-      tegel("Net nu", this._f(net == null ? null : Math.abs(net)), "W", net == null ? "onbekend" : net < 0 ? "teruglevering" : "afname", net != null && net < 0 ? "var(--accent)" : "var(--blauw)"),
-      tegel("Verbruik huis", this._f(huis), "W", `vandaag ${this._f(this._num(this._cfg("verbruik_vandaag")), 1)} kWh`, "var(--sub)"),
-      tegel("Zon nu", this._f(zon), "W", `${this._f(this._num(this._cfg("zon_vandaag")), 1)} kWh vandaag`, "var(--warm)"),
-      tegel("Laadpaal", laad && !ONBEKEND.includes(laad.state) ? LAADPAAL_NL[laad.state] || laad.state : "onbekend", "", `sessie ${this._f(this._num(this._cfg("laadpaal_sessie")), 1)} kWh`, "var(--sub)"),
-      tegel("Stroomprijs", this._f(this._num(this._cfg("prijs")), 3), "€/kWh", "", "var(--sub)"),
+      tegel("Net nu", this._f(net == null ? null : Math.abs(net)), "W", net == null ? "onbekend" : net < 0 ? "teruglevering" : "afname", net != null && net < 0 ? "var(--accent)" : "var(--blauw)", "net_nu"),
+      tegel("Verbruik huis", this._f(huis), "W", `vandaag ${this._f(this._num(this._cfg("verbruik_vandaag")), 1)} kWh`, "var(--sub)", "verbruik_vandaag"),
+      tegel("Zon nu", this._f(zon), "W", `${this._f(this._num(this._cfg("zon_vandaag")), 1)} kWh vandaag`, "var(--warm)", "zon_nu"),
+      tegel("Laadpaal", laad && !ONBEKEND.includes(laad.state) ? LAADPAAL_NL[laad.state] || laad.state : "onbekend", "", `sessie ${this._f(this._num(this._cfg("laadpaal_sessie")), 1)} kWh`, "var(--sub)", "laadpaal"),
+      tegel("Stroomprijs", this._f(this._num(this._cfg("prijs")), 3), "€/kWh", "", "var(--sub)", "prijs"),
     ].join("");
   }
 
@@ -408,7 +519,7 @@ class HuisDashboardCard extends HTMLElement {
       .filter((l) => waarden[l.type])
       .map((l) => {
         const [i, w, s] = waarden[l.type];
-        return `<div class="label" style="left:${l.x}%;top:${l.y}%">${i}<div><b>${w}</b><small>${s}</small></div></div>`;
+        return `<div class="label klik" data-actie="${{ zon: "zon_nu", net: "net_nu", huis: "verbruik_vandaag", laadpaal: "laadpaal" }[l.type]}" style="left:${l.x}%;top:${l.y}%">${i}<div><b>${w}</b><small>${s}</small></div></div>`;
       })
       .join("");
   }
@@ -448,7 +559,7 @@ class HuisDashboardCard extends HTMLElement {
     box.style.display = actief.length ? "" : "none";
     r.querySelector(".nuthuis .aantal").textContent = `${actief.length} ${actief.length === 1 ? "ding" : "dingen"}`;
     r.querySelector(".nuthuis .lijst").innerHTML = actief
-      .map((m) => `<div class="melding ${m.kleur || "warm"}"><div>${m.icoon || "⚠︎"}</div><div><b>${m.titel}</b><span>${m.sub || ""}</span></div></div>`)
+      .map((m) => `<div class="melding klik ${m.kleur || "warm"}" data-ent="${m.entity}"><div>${m.icoon || "⚠︎"}</div><div><b>${m.titel}</b><span>${m.sub || ""}</span></div></div>`)
       .join("");
   }
 
@@ -461,14 +572,151 @@ class HuisDashboardCard extends HTMLElement {
       const naam = s?.attributes.friendly_name || id.split(".")[1];
       const thuis = s?.state === "home";
       const st = !s || ONBEKEND.includes(s.state) ? "onbekend" : thuis ? "Thuis" : "Weg";
-      return `<div class="persoon ${thuis ? "thuis" : ""}"><div class="av">${naam[0].toUpperCase()}</div><div>${naam}<span>${st}</span></div></div>`;
+      return `<div class="persoon klik ${thuis ? "thuis" : ""}" data-ent="${id}"><div class="av">${naam[0].toUpperCase()}</div><div>${naam}<span>${st}</span></div></div>`;
     });
     const deuren = (this._config.deuren || []).map((d) => {
       const s = this._s(d.entity);
       const st = !s || ONBEKEND.includes(s.state) ? "onbekend" : s.state === "on" ? "open" : "dicht";
-      return `<div class="persoon ${st === "open" ? "alarm" : ""}"><div class="av">🚪</div><div>${d.naam}<span>${st}</span></div></div>`;
+      return `<div class="persoon klik ${st === "open" ? "alarm" : ""}" data-ent="${d.entity}"><div class="av">🚪</div><div>${d.naam}<span>${st}</span></div></div>`;
     });
     r.querySelector(".voet").innerHTML = mensen.concat(deuren).join("");
+  }
+
+  // ------------------------------------------------------------ pop-ups
+  _open(type, arg) {
+    this._pop = { type, arg };
+    this._tekenPop();
+  }
+
+  _sluit() {
+    this._pop = null;
+    const p = this.shadowRoot.querySelector(".pop");
+    if (p) p.hidden = true;
+  }
+
+  _tekenPop() {
+    const pop = this.shadowRoot.querySelector(".pop");
+    if (!pop || !this._pop || !this._hass) return;
+    const vel = pop.querySelector(".vel");
+    const { type, arg } = this._pop;
+    const kop = (icoon, titel, sub) =>
+      `<div class="velkop">${icoon}<h3>${titel}<small>${sub || ""}</small></h3><button class="dicht" aria-label="Sluiten">✕</button></div>`;
+    let html = "";
+    if (type === "lamp") html = this._popLamp(arg, kop);
+    else if (type === "laadpaal") html = this._popLaadpaal(kop);
+    else if (type === "aan") html = this._popAan(kop);
+    else if (type === "scene") {
+      html = kop(this._icoon(arg.icoon, "🎵"), arg.naam, "Scène")
+        + `<div class="knoppen"><button data-sc="${arg.aan}">${this._icoon("mdi:play", "▶")}Aan</button>`
+        + `<button data-sc="${arg.uit}">${this._icoon("mdi:stop", "■")}Uit</button></div>`;
+    }
+    const scroll = vel.scrollTop;
+    vel.innerHTML = html;
+    vel.scrollTop = scroll;
+    pop.hidden = false;
+    this._bindPop(vel);
+  }
+
+  _schakelaar(id, aan, onb, attr = "data-tgl") {
+    return `<button class="tgl ${aan ? "aan" : ""}" ${attr}="${id}" ${onb ? "disabled" : ""}></button>`;
+  }
+
+  _rijLamp(id) {
+    const s = this._s(id);
+    const onb = !s || ONBEKEND.includes(s.state);
+    const aan = s?.state === "on";
+    const st = onb ? "Onbekend" : aan ? `Aan · ${Math.round(((s.attributes.brightness ?? 255) / 255) * 100)}%` : "Uit";
+    return `<div class="rij"><div class="boven"><span>💡</span><div class="naam">${this._naam(id)}<small>${st}</small></div>${this._schakelaar(id, aan, onb)}</div></div>`;
+  }
+
+  _popLamp(g, kop) {
+    const id = g.bediening || (g.lampen || [])[0];
+    const s = this._s(id);
+    const onb = !s || ONBEKEND.includes(s.state);
+    const aan = s?.state === "on";
+    const pct = aan ? Math.round(((s.attributes.brightness ?? 255) / 255) * 100) : 0;
+    const modes = s?.attributes.supported_color_modes || [];
+    const dimbaar = modes.some((m) => m !== "onoff") || s?.attributes.brightness != null;
+    const kt = modes.includes("color_temp");
+    const kleur = modes.some((m) => ["hs", "rgb", "rgbw", "rgbww", "xy"].includes(m));
+    const minK = s?.attributes.min_color_temp_kelvin || 2200;
+    const maxK = s?.attributes.max_color_temp_kelvin || 6500;
+    const curK = s?.attributes.color_temp_kelvin || 2700;
+    const kleuren = [[30, 75], [0, 85], [330, 70], [285, 70], [225, 85], [185, 75], [120, 70], [52, 70]];
+    const leden = (g.lampen || []).filter((x) => x !== id);
+    return kop(this._icoon(g.icoon || "mdi:lightbulb"), g.naam || this._naam(id), onb ? "Niet bereikbaar" : aan ? "Aan" : "Uit")
+      + `<div class="groot"><div class="wrd">${onb ? "Onbekend" : aan ? `${pct}<small> %</small>` : "Uit"}</div><div style="margin-left:auto">${this._schakelaar(id, aan, onb)}</div></div>`
+      + (dimbaar && !onb ? `<h4>Helderheid</h4><input type="range" class="schuif" min="1" max="100" value="${pct || 50}" data-dim="${id}">` : "")
+      + (kt && !onb ? `<h4>Kleurtemperatuur</h4><input type="range" class="schuif kt" min="${minK}" max="${maxK}" value="${curK}" data-kt="${id}">` : "")
+      + (kleur && !onb ? `<h4>Kleur</h4><div class="kleuren">${kleuren.map(([h, sat]) => `<button data-kleur="${id}" data-h="${h}" data-s="${sat}" style="background:hsl(${h},${sat}%,55%)"></button>`).join("")}</div>` : "")
+      + (leden.length ? `<h4>Losse lampen</h4>${leden.map((x) => this._rijLamp(x)).join("")}` : "")
+      + `<button class="kn breed" data-meer="${id}">${this._icoon("mdi:cog", "⚙︎")} Meer opties en geschiedenis</button>`;
+  }
+
+  _popAan(kop) {
+    const aan = this._alleLampen().filter((id) => this._s(id)?.state === "on");
+    return kop(this._icoon("mdi:lightbulb-group", "💡"), "Lampen die aan zijn", `${aan.length} van ${this._alleLampen().length}`)
+      + (aan.length ? aan.map((id) => this._rijLamp(id)).join("") : `<div class="groot">Alle lampen zijn uit.</div>`)
+      + (aan.length ? `<button class="kn breed rood" data-alles-uit>${this._icoon("mdi:power", "⏻")} Alles uit (${aan.length})</button>` : "");
+  }
+
+  _laadpaalInfo() {
+    const statusId = this._cfg("laadpaal_status") || "";
+    const cfg = this._config.laadpaal || {};
+    const prefix = cfg.prefix || (statusId.split(".")[1] || "").replace(/_status$/, "");
+    return { statusId, cfg, prefix, charger: cfg.charger_id || prefix.toUpperCase() };
+  }
+
+  _popLaadpaal(kop) {
+    const { statusId, cfg, prefix } = this._laadpaalInfo();
+    const st = this._s(statusId);
+    const onb = !st || ONBEKEND.includes(st.state);
+    const status = st?.state;
+    const ents = prefix ? Object.keys(this._hass.states).filter((e) => (e.split(".")[1] || "").startsWith(prefix + "_")) : [];
+    const vermogenId = cfg.vermogen || ents.find((e) => e.startsWith("sensor.") && /(vermogen|power)$/.test(e));
+    const vermogen = this._watt(vermogenId);
+    const geenAuto = status === "disconnected";
+    const knop = (cmd, icoon, reserve, tekst, actief) =>
+      `<button data-easee="${cmd}" ${onb || geenAuto ? "disabled" : ""} class="${actief ? "actief" : ""}">${this._icoon(icoon, reserve)}${tekst}</button>`;
+    const bestuurder = this._s(cfg.bestuurder || "input_select.laadpaal_bestuurder");
+    const maand = (cfg.maand || ["input_number.laadkwh_mark", "input_number.laadkwh_sophie"]).filter((id) => this._s(id));
+    const schakelaars = ents.filter((e) => e.startsWith("switch."));
+    const sensoren = ents.filter((e) => e.startsWith("sensor.") && e !== statusId).slice(0, 12);
+    const regel = (id) => {
+      const s = this._s(id);
+      const w = !s || ONBEKEND.includes(s.state) ? "onbekend" : `${LAADPAAL_NL[s.state] || s.state} ${s.attributes.unit_of_measurement || ""}`;
+      return `<div class="regel"><span>${this._naam(id)}</span><span>${w}</span></div>`;
+    };
+    return kop(this._icoon("mdi:ev-station", "🔌"), "Laadpaal", "Easee op de oprit")
+      + `<div class="groot">${this._icoon("mdi:car-electric", "🚗")}<div class="wrd">${onb ? "Onbekend" : LAADPAAL_NL[status] || status}<br><small>${vermogen != null ? `${this._f(vermogen / 1000, 1)} kW · ` : ""}sessie ${this._f(this._num(this._cfg("laadpaal_sessie")), 1)} kWh</small></div></div>`
+      + `<div class="knoppen">${knop("start", "mdi:play", "▶", "Start", false)}${knop("pause", "mdi:pause", "❚❚", "Pauze", status === "paused")}${knop("resume", "mdi:play-pause", "▶❚", "Hervat", false)}${knop("stop", "mdi:stop", "■", "Stop", false)}</div>`
+      + (geenAuto ? `<div class="sub" style="text-align:center">Geen auto aangesloten.</div>` : "")
+      + (bestuurder ? `<h4>Wie laadt er?</h4><div class="knoppen">${(bestuurder.attributes.options || []).map((o) => `<button data-select="${bestuurder.entity_id}" data-optie="${o}" class="${bestuurder.state === o ? "actief" : ""}">${o}</button>`).join("")}</div>` : "")
+      + (maand.length ? `<h4>Deze maand geladen</h4>${maand.map(regel).join("")}` : "")
+      + (schakelaars.length ? `<h4>Instellingen</h4>${schakelaars.map((id) => { const s = this._s(id); const onb2 = !s || ONBEKEND.includes(s.state); return `<div class="regel"><span>${this._naam(id)}</span>${this._schakelaar(id, s?.state === "on", onb2, "data-switch")}</div>`; }).join("")}` : "")
+      + (sensoren.length ? `<h4>Details</h4>${sensoren.map(regel).join("")}` : "")
+      + `<button class="kn breed" data-meer="${statusId}">${this._icoon("mdi:chart-line", "📈")} Geschiedenis</button>`;
+  }
+
+  _bindPop(vel) {
+    const h = this._hass;
+    const q = (sel, fn, ev = "click") => vel.querySelectorAll(sel).forEach((el) => el.addEventListener(ev, (e) => fn(el, e)));
+    q(".dicht", () => this._sluit());
+    q("[data-tgl]", (el) => this._schakel(el.dataset.tgl, this._s(el.dataset.tgl)?.state !== "on"));
+    q("[data-switch]", (el) => h.callService("switch", "toggle", { entity_id: el.dataset.switch }));
+    q("[data-sc]", (el) => { h.callService("scene", "turn_on", { entity_id: el.dataset.sc }); this._sluit(); });
+    q("[data-meer]", (el) => { this._sluit(); this._meerInfo(el.dataset.meer); });
+    q("[data-alles-uit]", () => this._alleLampen().filter((id) => this._s(id)?.state === "on").forEach((id) => this._schakel(id, false)));
+    q("[data-select]", (el) => h.callService("input_select", "select_option", { entity_id: el.dataset.select, option: el.dataset.optie }));
+    q("[data-easee]", (el) => h.callService("easee", "action_command", { charger_id: this._laadpaalInfo().charger, action_command: el.dataset.easee }));
+    q("[data-kleur]", (el) => this._schakel(el.dataset.kleur, true, { hs_color: [Number(el.dataset.h), Number(el.dataset.s)] }));
+    for (const [attr, sleutel] of [["data-dim", "brightness_pct"], ["data-kt", "color_temp_kelvin"]]) {
+      q(`[${attr}]`, () => { this._sleept = true; }, "input");
+      q(`[${attr}]`, (el) => {
+        this._sleept = false;
+        this._schakel(el.getAttribute(attr), true, { [sleutel]: Number(el.value) });
+      }, "change");
+    }
   }
 
   // ------------------------------------------------------------ 3D

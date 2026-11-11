@@ -19,6 +19,8 @@ renders = set(os.listdir(renders_dir))
 # kamer per groep (voor het kamerpaneel rechts)
 KAMER = {
     "woonkamer_plafond": "woonkamer", "woonkamer_sfeer": "woonkamer", "tv_ambilight": "woonkamer",
+    "sweetlampen": "woonkamer", "hue_go": "woonkamer", "yeelight": "woonkamer",
+    "filament_1": "woonkamer", "filament_2": "woonkamer", "leeslamp": "leeshoek", "moodlight": "leeshoek",
     "keuken_tafel": "keuken", "keuken_bar": "keuken", "leeshoek": "leeshoek", "speelhoek": "speelhoek",
     "toilet": "hal", "entree": "hal", "bijkeuken": "bijkeuken",
     "voordeur": "buiten", "overkapping": "buiten", "tuin": "buiten", "tuin_feest": "buiten",
@@ -35,6 +37,7 @@ KAMERNAMEN = [
 ]
 NAAM = lambda g: g.replace("_", " ").capitalize()
 
+scenes = cfg.pop("scenes", {}) or {}
 alle = {}
 for verdieping in cfg.values():
     for gid, g in (verdieping or {}).items():
@@ -48,13 +51,22 @@ def groepen_voor(weergave, gids):
     for gid in gids:
         g = alle.get(gid, {})
         render = f"{weergave}_{gid}.jpg"
-        item = {"id": gid, "naam": NAAM(gid), "kamer": KAMER.get(gid),
-                "bediening": g.get("bediening"), "lampen": g.get("lampen", [])}
+        item = {"id": gid, "naam": g.get("naam") or NAAM(gid), "kamer": KAMER.get(gid),
+                "bediening": g.get("bediening"), "lampen": g.get("lampen", []),
+                "icoon": g.get("icoon", "mdi:lightbulb")}
         if render in renders:
             item["render"] = render
         if gid in hs:
             item.update(hs[gid])
         res.append(item)
+    # scènes op deze weergave (knop met aan/uit)
+    for sid, sc_ in scenes.items():
+        if sc_.get("weergave") == weergave:
+            item = {"id": sid, "type": "scene", "naam": sc_.get("naam", NAAM(sid)), "kamer": sc_.get("kamer"),
+                    "aan": sc_.get("aan"), "uit": sc_.get("uit"), "icoon": sc_.get("icoon", "mdi:palette")}
+            if sid in hs:
+                item.update(hs[sid])
+            res.append(item)
     return res
 
 
@@ -89,6 +101,12 @@ for kid, knaam, verd in KAMERNAMEN:
     if ids:
         kamers.append({"id": kid, "naam": knaam, "verdieping": verd, "lampen": ids})
 
-json.dump({"beeld": {"breedte": 1600, "hoogte": 1067}, "weergaven": weergaven, "kamers": kamers},
+from PIL import Image  # noqa: E402
+
+breedte, hoogte = Image.open(os.path.join(renders_dir, weergaven[0]["dag"])).size
+scene_lijst = [{"id": sid, "naam": v.get("naam", NAAM(sid)), "aan": v.get("aan"), "uit": v.get("uit"),
+                "icoon": v.get("icoon", "mdi:palette")} for sid, v in scenes.items()]
+json.dump({"beeld": {"breedte": breedte, "hoogte": hoogte}, "weergaven": weergaven, "kamers": kamers,
+           "scenes": scene_lijst},
           open(uit, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 print("weergaven:", [w["id"] for w in weergaven], "kamers:", len(kamers))
