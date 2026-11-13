@@ -48,7 +48,14 @@ class HuisDashboardCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (this._data) this._update();
+    if (!this._data) return;
+    // Een fout hier laat Home Assistant de hele kaart vervangen door "Configuratiefout".
+    // Daarom vangen we hem af: de kaart blijft staan en de fout komt in de console.
+    try {
+      this._update();
+    } catch (e) {
+      console.error("huis-dashboard-card: fout bij bijwerken", e);
+    }
   }
 
   connectedCallback() {
@@ -396,7 +403,7 @@ class HuisDashboardCard extends HTMLElement {
     r.querySelector(".rijen").innerHTML = kamer.lampen
       .map((id) => `<div class="rij" data-id="${id}"><div class="boven"><span>💡</span><div class="naam"><span class="n"></span><small class="st"></small></div><button class="tgl"></button></div><input type="range" min="1" max="100"></div>`)
       .join("");
-    r.querySelectorAll(".rij").forEach((rij) => {
+    r.querySelectorAll(".rijen > .rij").forEach((rij) => {
       const id = rij.dataset.id;
       rij.querySelector(".tgl").addEventListener("click", () => this._schakel(id, this._s(id)?.state !== "on"));
       rij.querySelector(".naam").style.cursor = "pointer";
@@ -527,7 +534,7 @@ class HuisDashboardCard extends HTMLElement {
   _updateRijen() {
     const r = this.shadowRoot;
     let aan = 0;
-    r.querySelectorAll(".rij").forEach((rij) => {
+    r.querySelectorAll(".rijen > .rij").forEach((rij) => {
       const s = this._s(rij.dataset.id);
       const onb = !s || ONBEKEND.includes(s.state);
       const isAan = s?.state === "on";

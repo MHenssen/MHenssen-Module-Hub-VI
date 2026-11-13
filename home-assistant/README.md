@@ -451,6 +451,23 @@ nooit als "uit". De kaart schakelt ze ook niet: de knop is uitgegrijsd.
 3. Maak een nieuw dashboard en plak `dashboard3d/dashboard.yaml` in de
    Raw-configuratie-editor. Vul daarin de sensoren met een `?` in.
 
+Alleen de kaart bijwerken (zoals bij een bugfix): upload het nieuwe
+`huis-dashboard-card.js` met File editor naar `/config/www/dashboard3d/` en
+overschrijf het oude bestand. Verhoog daarna `?v=` bij de resource en ververs
+de pagina (Ctrl+Shift+R, of in de app: Companion-app > Foutopsporing >
+Frontend-cache resetten).
+
+### Opgelost: "Configuratiefout" na lang drukken (v3, 2026-11-13)
+
+Bij lang drukken op een lamp met meerdere losse lampen (bijvoorbeeld de
+tafellampen) verscheen eerst de pop-up en na ongeveer een seconde
+"Configuratiefout". De rijen in de pop-up hebben dezelfde CSS-klasse als de
+rijen in het kamerpaneel. Bij de volgende statusupdate uit HA probeerde de kaart
+die pop-uprijen bij te werken als kamerrijen, en dat gaf een fout. Home Assistant
+vervangt een kaart met zo'n fout door "Configuratiefout". De kaart werkt nu
+alleen de rijen in het kamerpaneel bij. Een fout bij het bijwerken komt
+voortaan in de browserconsole terecht, en de kaart blijft gewoon staan.
+
 ## Wat de bestanden doen
 
 | Bestand | Doel |
