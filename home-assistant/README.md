@@ -562,5 +562,21 @@ zijn. "nieuw" zet een extra lamp neer die niet in Floorplanner staat, zoals een 
 Het script zet plafondspots die Floorplanner ín een dakrand of luifel heeft
 geplaatst automatisch net onder de plaat, anders geven ze geen licht.
 
+### Model gelijk aan het echte huis (`blender/model_aanpassingen.py`, 2026-11-13)
+
+Het renderscript past na het laden van de verdiepingen automatisch deze correcties toe:
+
+- **Zonnepanelen gekanteld.** Floorplanner bewaart de kanteling (`rotation_x`/`rotation_y`),
+  maar fml2blender negeert die. Geef de FML-bestanden mee met
+  `FML_ALLE=verdieping1.fml:verdieping2.fml:verdieping3.fml`, dan worden de panelen
+  op positie teruggezocht en gekanteld. Zonder `FML_ALLE` blijven ze plat.
+- **Balk weg.** Losse balken van meer dan 5 m (die door de zoldergevel staken) worden verwijderd.
+- **Dakkapel wit.** In `huis.glb` was het dakkapel 70% doorzichtig en leek het daardoor zwart.
+  Nu is het dicht en wit.
+- **Auto's.** Zilvergrijze VW T4, donkerblauwe BMW iX3 (op straat) en grijsmetallic
+  Audi Q4 (op de oprit). Elke auto krijgt eigen materialen. Let op: de vormen blijven
+  de Floorplanner-modellen (een T3-bus en een SUV); alleen de lak is aangepast. Echte
+  modellen van een T4, iX3 of Q4 zitten niet in het model.
+
 Haal voor `harvest` eerst items met een `refid` die met `sym-` begint uit de
 `.fml`: die bestaan niet als model. De begane grond bouwen duurt ongeveer 25 minuten.

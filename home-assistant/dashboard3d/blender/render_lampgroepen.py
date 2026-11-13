@@ -39,6 +39,9 @@ for extra in filter(None, os.environ.get("EXTRA_BLENDS", "").split(":")):
     for o in dst.objects:
         if o is not None and o.type != "CAMERA":
             sc.collection.objects.link(o)
+# model gelijk trekken met het echte huis (panelen, balk, dakkapel, auto's)
+import model_aanpassingen  # noqa: E402
+model_aanpassingen.pas_toe()
 # groepen.json: {"v1": {"groep": [[x, y], ...]}} of, uitgebreid,
 # {"groep": {"posities": [[x, y], ...], "nieuw": [[x, y, z, watt, "kleur"], ...]}}
 # "posities" koppelt bestaande Floorplanner-lampen; "nieuw" zet een extra lamp neer
@@ -64,40 +67,6 @@ sc.render.resolution_x, sc.render.resolution_y = RES
 if CAMERA == "boven":
     verberg_daken()
 co, vloer = maak_camera(sc, CAMERA)
-
-# auto's in de kleuren van onze eigen auto's (iX3 zwart, Q4 grijs, T4-busje grijs)
-def wortel(o):
-    while o.parent:
-        o = o.parent
-    return o
-
-
-def lak(m, kleur, metaal=0.6):
-    b = next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
-    if not b:
-        return
-    for link in list(b.inputs["Base Color"].links):
-        m.node_tree.links.remove(link)
-    b.inputs["Base Color"].default_value = (*kleur, 1)
-    b.inputs["Metallic"].default_value = metaal
-    b.inputs["Roughness"].default_value = 0.25
-
-
-geverfd = set()
-for o in bpy.data.objects:
-    if o.type != "MESH":
-        continue
-    r = wortel(o)
-    for slot in o.material_slots:
-        m = slot.material
-        if not m or m.name in geverfd or not m.node_tree:
-            continue
-        if "Vanagon" in r.name and m.name.startswith(("Material__3", "_6_-_Default")):
-            lak(m, (0.22, 0.23, 0.24)); geverfd.add(m.name)
-        elif "SUV" in r.name and m.name.startswith("FINISH_Car_DarkBlue"):
-            # de SUV op de oprit (bij de laadpaal) is de grijze Q4, die op straat de zwarte iX3
-            lak(m, (0.32, 0.33, 0.34) if r.matrix_world.translation.x < -10 else (0.015, 0.015, 0.017))
-            geverfd.add(m.name)
 
 # muren per kamer in de echte kleur (uit de foto's): KAMERKLEUREN='{"Woonkamer": "#B5A999"}'
 # en FML=verdieping1.fml. Alleen muurvlakken die naar die kamer kijken, krijgen de kleur.

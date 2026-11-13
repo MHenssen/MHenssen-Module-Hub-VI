@@ -269,6 +269,8 @@ def build_surfaces(design, base, parents, mats, level):
         if s.get("isRoof"):
             n["dak"] += 1
             alpha = 1.0 - (s.get("transparency", 0) or 0) / 100
+            if (s.get("customName") or "").lower() == "dakkapel":
+                alpha = 1.0  # dakkapel is in het echt wit en dicht, niet doorzichtig
             mat = material(f"dak_{s.get('color', 'x')}_{int(alpha * 100)}",
                            hex_rgba(s.get("color", "#9a9a9a"), max(alpha, 0.15)))
             slab_from_points(f"dak_v{level}_{n['dak']:02d}", pts, th, mat, parents["daken"])
@@ -304,6 +306,9 @@ def build_items(design, base, parents, mats, level, meubels=True):
             obj.rotation_euler = (0, tilt, rot)
             continue
         if not meubels or w * d * h <= 0:
+            continue
+        # lange balken (> 5 m) steken in het model door de gevel; in het echt bestaan ze niet
+        if max(w, d) > 500 and h < 40:
             continue
         # alleen binnenmeubels: bomen, auto's en tuinspullen weglaten
         if h > 260 or not any(point_in_poly(x, y, a["poly"]) for a in areas):
