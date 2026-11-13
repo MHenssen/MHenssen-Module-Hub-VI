@@ -578,5 +578,13 @@ Het renderscript past na het laden van de verdiepingen automatisch deze correcti
   de Floorplanner-modellen (een T3-bus en een SUV); alleen de lak is aangepast. Echte
   modellen van een T4, iX3 of Q4 zitten niet in het model.
 
+Renders v4 (2026-11-13): alle 36 beelden opnieuw gemaakt met deze correcties, zelfde
+camera's en bestandsnamen. De klikpunten en labels staan op precies dezelfde plek als
+voorheen (opnieuw berekend en vergeleken). Bij **Voor** valt het berekende gaslabel
+(68.9/79.4) over het netlabel (66.9/78.3). Advies voor naast elkaar bij de voordeur:
+net `x: 61, y: 78`, gas `x: 73, y: 78`. De laadpaal (22.1/52.8) staat goed bij de oprit.
+Na het uploaden met dezelfde bestandsnamen kan de browser oude beelden tonen: ververs
+hard (Ctrl+F5) of wis de cache van de HA-app.
+
 Haal voor `harvest` eerst items met een `refid` die met `sym-` begint uit de
 `.fml`: die bestaan niet als model. De begane grond bouwen duurt ongeveer 25 minuten.
